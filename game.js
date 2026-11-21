@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Little Knife (v2.0) — Complete Unified Game Engine, 16-Role State Machine,
+   Little Knife (v2.4) — Complete Unified Game Engine, 16-Role State Machine,
    3D Map Controller, PeerJS Authority Netcode & Tactical Comms (Audited Final)
    Global Namespace: window.LK
    ========================================================================== */
@@ -29,20 +29,20 @@
 
   const WEATHERS = {
     clear: { id: 'clear', name: '晴朗', desc: '无特殊天象效果', mood: 'p3r' },
-    bloodmoon: { id: 'bloodmoon', name: '血月', desc: '全局所有伤害 +0.5', mood: 'p5r' },
-    fog: { id: 'fog', name: '迷雾', desc: '3D 地图坐标遮蔽（???）', mood: 'p3r' },
-    storm: { id: 'storm', name: '雷暴', desc: '陆地层禁止穿裤', mood: 'p3r' }
+    bloodmoon: { id: 'bloodmoon', name: '血月', desc: '全局所有伤害 +0.5；施法者回合初自动 +1🔪', mood: 'p5r' },
+    fog: { id: 'fog', name: '迷雾', desc: '隐藏地图坐标且禁止跨地点远程锁定；仅施法者免疫', mood: 'p3r' },
+    storm: { id: 'storm', name: '雷暴', desc: '陆地禁止穿裤；施法者免疫且回合初自动 +0.5👖', mood: 'p3r' }
   };
 
   const ARTIFACTS = {
-    SQ1: { id: 'SQ1', name: 'SQ1 大刀', short: '大刀', stepsNeed: 2, desc: '攻击伤害与扒裤效果翻倍' },
-    SQ2: { id: 'SQ2', name: 'SQ2 利刃', short: '利刃', stepsNeed: 1, desc: '1步突进移动到任意可达点并免费攻击1次' },
-    SQ3: { id: 'SQ3', name: 'SQ3 猪脸', short: '猪脸', stepsNeed: 3, desc: '任何玩家对你互动（含远程）前须先贴脸花1步捏脸（按每张猪脸实例独立记录）' },
-    SQ4: { id: 'SQ4', name: 'SQ4 云梯', short: '云梯', stepsNeed: 2, desc: '随时1步登天（天二），或在天空1步无伤降落任意非狱内地点' },
-    SQ5: { id: 'SQ5', name: 'SQ5 吸铁石', short: '吸铁石', stepsNeed: 1, desc: '耗1步远程吸走任意1名存活玩家手中的1把刀（受猪脸与结界限制）' },
-    SQ6: { id: 'SQ6', name: 'SQ6 钩爪', short: '钩爪', stepsNeed: 2, desc: '耗1步将任意非狱内非结界的1名存活玩家跨层强拉至你所在地点（受猪脸限制，不触发带人）' },
-    SQ7: { id: 'SQ7', name: 'SQ7 沙漏', short: '沙漏', stepsNeed: 2, desc: '主动结束行动时，可将本回合剩余步数最多储存1步带入下回合（下回合输拳也能动，赢拳叠加）' },
-    SQ8: { id: 'SQ8', name: 'SQ8 铁裤', short: '铁裤', stepsNeed: 3, desc: '每次受扒裤最多扣0.5裤（无视大刀双倍）；每回合开始若为0裤自动生成0.5临时铁裤' }
+    SQ1: { id: 'SQ1', name: 'SQ1 大刀', short: '大刀', shortDesc: '伤害与扒裤翻倍', stepsNeed: 2, desc: '攻击伤害与扒裤效果翻倍' },
+    SQ2: { id: 'SQ2', name: 'SQ2 利刃', short: '利刃', shortDesc: '1步突进+攻(扣血耗1刀)', stepsNeed: 1, desc: '1步突进移动到任意可达点并免费攻击1次（对0裤目标扣血必须持有并消耗1把刀）' },
+    SQ3: { id: 'SQ3', name: 'SQ3 猪脸', short: '猪脸', shortDesc: '互动前须贴脸捏脸', stepsNeed: 3, desc: '任何玩家对你互动（含远程）前须先贴脸花1步捏脸（按每张猪脸实例独立记录）' },
+    SQ4: { id: 'SQ4', name: 'SQ4 云梯', short: '云梯', shortDesc: '免蓄力登天/降落海陆', stepsNeed: 2, desc: '免升天蓄力直接登天（含海洋层），或在天空1步降落陆地/海洋任意非狱内地点' },
+    SQ5: { id: 'SQ5', name: 'SQ5 吸铁石', short: '吸铁石', shortDesc: '隔空夺1刀', stepsNeed: 1, desc: '耗1步远程吸走任意1名存活玩家手中的1把刀（受猪脸、结界与迷雾限制）' },
+    SQ6: { id: 'SQ6', name: 'SQ6 钩爪', short: '钩爪', shortDesc: '跨层强拉目标', stepsNeed: 2, desc: '耗1步将任意非狱内非结界的1名存活玩家跨层强拉至你所在地点（受猪脸与迷雾限制，不触发带人）' },
+    SQ7: { id: 'SQ7', name: 'SQ7 沙漏', short: '沙漏', shortDesc: '主动存1步至下回合', stepsNeed: 2, desc: '主动结束行动时，可将本回合剩余步数最多储存1步带入下回合（下回合输拳也能动，赢拳叠加）' },
+    SQ8: { id: 'SQ8', name: 'SQ8 铁裤', short: '铁裤', shortDesc: '限伤0.5裤/自动生0.5裤', stepsNeed: 3, desc: '每次受扒裤最多扣0.5裤（无视大刀双倍）；每回合开始若为0裤自动生成0.5临时铁裤' }
   };
 
   const ALL_SQ_IDS = Object.keys(ARTIFACTS);
@@ -57,11 +57,12 @@
   }
 
   const WISH_OPTIONS = [
-    { id: 'revive', name: '冥界召回', desc: '复活1名阵亡玩家（1裤1命，位于地府）' },
-    { id: 'swap', name: '空间置换', desc: '互换任意2名存活玩家的位置' },
-    { id: 'drain_oxy', name: '抽干氧源', desc: '削减所有海/空玩家呼吸额度（缺氧计数 +1）' },
-    { id: 'jail', name: '天降法槌', desc: '强制送任意1名存活玩家入狱' },
-    { id: 'disarm', name: '全图缴械', desc: '清空全场所有玩家手中的刀' }
+    { id: 'divine_reset', name: '神赐重整', shortDesc: '+1命 · 回满裤 · +1技/护盾', desc: '许愿者自身 +1 命、裤子回满至上限、且主动技次数 +1（无主动技角色改为获得 1 层黑市护盾）' },
+    { id: 'revive', name: '冥界召回', shortDesc: '复活1人(1裤1命地府)', desc: '复活1名阵亡玩家（1裤1命，位于地府）' },
+    { id: 'swap', name: '空间置换', shortDesc: '互换2名存活者位置', desc: '互换任意2名存活玩家的位置' },
+    { id: 'drain_oxy', name: '抽干氧源', shortDesc: '除己外海空缺氧+2', desc: '除许愿者本人外，所有海/空存活玩家缺氧计数 +2（海王在海洋、青蛙面罩在海洋仍免疫）' },
+    { id: 'jail', name: '天降法槌', shortDesc: '强送1名存活者入狱', desc: '强制送任意1名存活玩家入狱' },
+    { id: 'disarm', name: '全图缴械', shortDesc: '除己外清空全场刀', desc: '除许愿者本人外，清空其他所有玩家手中的刀' }
   ];
 
   const CONTRACTS = [
@@ -76,41 +77,40 @@
   ];
 
   const ROLES = [
-    { id: 'normal', num: '01', name: '普通人', arch: 'survival', archName: '生存', hp: 1, pants: 1.5, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '扎实的初始面板与黑市特权，契约过载时改为获取黑市护盾。', passiveName: '精明淘货', passiveDesc: '每次进入黑市抽契约可免费刷新 1 次（每回合限 1 次）。', brief: '稳健面板 + 黑市免费重抽' },
-    { id: 'raider', num: '02', name: '突袭者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 1, atkMult: 1.5, activeMax: 1, activeCost: 1, activeName: '量子隐身', activeDesc: '耗1步进入隐身且不立刻行动；下回合他人可在自身位置宣告预判攻击；全员走完后你从白名单（单人移动/穿裤/拔刀/呼吸）揭晓暗步，结算预判命中或扑空，若本回合获步再立刻行动。', passiveName: '处决刃锋', passiveDesc: '开局自带 1 把刀，常规「咔」与突进伤害为 1.5 倍。', brief: '1.5x 伤害 + 量子隐身心理博弈' },
-    { id: 'storm', num: '03', name: '风暴者', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '乱流风暴', activeDesc: '远程将同层级的单人（免费，不耗步）或整个地点所有存活单位（耗 1 步）强制吹至同层其他非狱内地点，不触发带人。', passiveName: '气压掌控', passiveDesc: '吹飞单人不消耗常规步数，可无缝衔接击杀或拆伙。', brief: '免费吹单人 / 1步吹全地点' },
+    { id: 'normal', num: '01', name: '普通人', arch: 'survival', archName: '生存', hp: 1.5, pants: 1.5, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '开局与常规复活自带 1 层黑市护盾，契约过载时改为获取黑市护盾。', passiveName: '精明淘货', passiveDesc: '每回合首次在黑市抽恶魔契约不消耗步数（0步），并保留每回合黑市免费刷新 1 次。', brief: '自带护盾 + 0步首进黑市免费重抽' },
+    { id: 'raider', num: '02', name: '突袭者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 1, atkMult: 1.5, activeMax: 1, activeCost: 1, activeName: '量子隐身', activeDesc: '耗1步进入隐身且不立刻行动；下回合他人可在自身位置宣告预判攻击；全员走完后你从白名单揭晓暗步并结算预判。', passiveName: '刃锋分伤', passiveDesc: '开局自带 1 刀、1.5x 伤害；同地点有 ≥2 名 0 裤合法目标时，1 步 + 1 刀可将本次攻击总额按 0.5 自由分配给多个目标。', brief: '1.5x 攻 + 同房刃锋分伤 + 量子隐身' },
+    { id: 'storm', num: '03', name: '风暴者', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '乱流风暴', activeDesc: '远程将同层级的单人（免费，不耗步）或整个地点所有存活单位（耗 1 步）强制吹至同层其他非狱内地点，不触发带人（迷雾禁跨点）。', passiveName: '气压掌控', passiveDesc: '吹飞单人不消耗常规步数，可无缝衔接击杀或拆伙。', brief: '免费吹单人 / 1步吹全地点' },
     { id: 'tough', num: '04', name: '坚韧者', arch: 'survival', archName: '生存', hp: 4, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '以绝对血量压制全场，无主动技（黑市过载改为获得护盾）。', passiveName: '钢铁躯体', passiveDesc: '初始拥有高达 4 命，容错率冠绝全场。', brief: '4 命肉盾，硬抗致命斩杀' },
-    { id: 'chili', num: '05', name: '辛红辣椒', arch: 'control', archName: '控场', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '电击麻痹', activeDesc: '耗1步远程电击任意1名存活玩家，使其下回合无论获得多少步都无法行动。', passiveName: '高压电弧', passiveDesc: '远程强硬封锁关键目标节奏，打断神器与复活推进。', brief: '远程电击，下回合强制麻痹' },
-    { id: 'watcher', num: '06', name: '监视者', arch: 'control', archName: '控场', hp: 1, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '远程抓捕', activeDesc: '耗1步随时随地（含狱内）对任意存活玩家发起三局两胜逮捕猜拳，败者入狱。', passiveName: '全境法眼', passiveDesc: '不受警局位置限制，狱内亦可反手拉人陪葬。', brief: '全图远程三局两胜逮捕入狱' },
-    { id: 'aquaman', num: '07', name: '海王', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '深海潜行', activeDesc: '耗1步并消耗1次技能，随时随地（含狱内，被结界封锁时除外）单人直接潜入海洋层任意可达地点。', passiveName: '潮汐归港', passiveDesc: '在码头走常规移动下海不消耗技能次数；从海洋上岸时固定回到码头。', brief: '2次主动随时/狱内下海 + 码头归港' },
-    { id: 'piggy', num: '08', name: '小猪', arch: 'trick', archName: '诡计', hp: 1, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 1, activeCost: 0, activeName: '顺手牵刀', activeDesc: '开启后，在你攻击（「咔」/利刃突进）同地点目标时免费抢走对方 1 把刀。', passiveName: '天生猪脸', passiveDesc: '开局自带独立 SQ3 猪脸（不占龙宫且死亡不掉落，地府重生生成全新猪脸实例需重捏）。', brief: '自带独立猪脸 + 攻击免费抢刀' },
-    { id: 'ninja', num: '09', name: '忍者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '瞬身连撞', activeDesc: '斩杀任意单位后，可消耗1次技能免费向距离1（1步可达）的另1单位突进撞击，造成1伤（先扣裤，0裤扣命）；若撞死可再次消耗次数连撞！', passiveName: '自带利刃', passiveDesc: '开局自带独立 SQ2 利刃（不占龙宫且死亡不掉落），高机动无裤刺客。', brief: '自带 SQ2 利刃 + 斩杀瞬身连撞' },
-    { id: 'puppeteer', num: '10', name: '操偶师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '提线木偶', activeDesc: '耗1步强控同层级1名存活玩家，令其立刻执行1次基础动作（单人移动 / 穿裤 / 拔刀 / 同地点扒裤）。', passiveName: '丝线操纵', passiveDesc: '可借敌之手扒裤、把敌人拉出掩体或送进绝境。', brief: '远程强控同层目标执行动作' },
-    { id: 'parasite', num: '11', name: '寄生者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '寄生', activeDesc: '同地点耗1步附身目标，免费随行并共享氧气/青蛙面罩；宿主花1步扒裤可甩开；宿主掉血/死亡则震出并清裤，入狱连坐；附身态可花1步破体而出并免费扒/咔宿主。', passiveName: '破体奇袭', passiveDesc: '借壳蹭车蹭氧，择机破体斩杀宿主。', brief: '贴脸附身蹭车 + 破体免费扒/咔' },
-    { id: 'mirror', num: '12', name: '镜像师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '盗版', activeDesc: '耗1步复刻并立刻释放本局上一个被使用的主动技（若尚无人使用主动技，则直接 +1 刀 +0.5 裤）。', passiveName: '无限反射', passiveDesc: '以彼之道还施彼身，根据战局动态复制最强控制或爆发。', brief: '复制本局上一个主动技即时释放' },
-    { id: 'reverser', num: '13', name: '逆转者', arch: 'trick', archName: '诡计', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '越输越强，一朝翻盘打出多步连击终结战场。', passiveName: '蓄势逆转', passiveDesc: '每输 1 轮猜拳存储 1 层「势」（上限 2 层）；赢拳时自动引爆全部势，本回合额外多走对应步数。', brief: '输拳攒势，赢拳爆发最高 3 连步' },
-    { id: 'barrier', num: '14', name: '结界师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '绝对领域', activeDesc: '耗1步远程封锁任意非狱内地点直至下回合末，内外彻底隔绝（无视水遁、云梯、风暴与进出移动）。', passiveName: '空间锁死', passiveDesc: '可将关键地点变作孤岛，瓮中捉鳖或锁死海空缺氧者。', brief: '远程绝对封锁地点至下回合末' },
-    { id: 'curser', num: '15', name: '诅咒师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '命运链接', activeDesc: '耗1步远程绑定任意 2 名存活玩家持续 2 回合，期间一方扣裤或扣血时另一方同步承受同等代价。', passiveName: '血咒共振', passiveDesc: '强行制造双人共死困局，令肉盾与通缉犯无处可逃。', brief: '绑定 2 人共担扣裤与伤害 2 回合' },
-    { id: 'undertaker', num: '16', name: '收尸人', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '封魂', activeDesc: '耗1步远程销毁 1 名处于待地府复活状态玩家的复活资格（令其直接死透），并回复自身 +0.5 命。', passiveName: '敛尸成刃', passiveDesc: '场上每有 1 名玩家阵亡，自身自动获得 +1 刀。', brief: '死人自动加刀 + 远程掐灭地府复活' }
+    { id: 'chili', num: '05', name: '辛红辣椒', arch: 'control', archName: '控场', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 1, activeCost: 1, activeName: '电击麻痹', activeDesc: '耗1步远程电击任意1名存活玩家（迷雾禁跨点），使其下回合无论获得多少步都无法行动（1次）。', passiveName: '高压电弧', passiveDesc: '关键回合一击封锁核心敌人的全部节奏。', brief: '1次强力远程电击麻痹' },
+    { id: 'watcher', num: '06', name: '监视者', arch: 'control', archName: '控场', hp: 1.5, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '远程抓捕', activeDesc: '耗1步随时随地（含狱内，迷雾禁跨点）对任意存活玩家发起三局两胜逮捕猜拳，败者入狱。', passiveName: '全境法眼', passiveDesc: '不受警局位置限制，狱内亦可反手拉人陪葬。', brief: '全图远程三局两胜逮捕入狱' },
+    { id: 'aquaman', num: '07', name: '海王', arch: 'survival', archName: '生存', hp: 1.5, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '深海潜行', activeDesc: '耗1步并消耗1次技能，随时随地（含狱内，被结界封锁时除外）单人直接潜入海洋层任意可达地点。', passiveName: '深海亲和', passiveDesc: '在海洋层永久免疫缺氧（无需青蛙面罩，天空层仍正常计算缺氧）；从海洋上岸固定回到码头。', brief: '海洋永久免缺氧 + 2次随时潜海' },
+    { id: 'piggy', num: '08', name: '小猪', arch: 'trick', archName: '诡计', hp: 2, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 1, activeCost: 0, activeName: '顺手牵刀', activeDesc: '开启后，在你攻击（「咔」/利刃突进）同地点目标时免费抢走对方 1 把刀（1次）。', passiveName: '天生猪脸', passiveDesc: '2 命面板 + 开局自带独立 SQ3 猪脸（不占龙宫且死亡不掉落，地府重生生成全新猪脸实例需重捏）。', brief: '2命 + 天生猪脸 + 顺手牵刀' },
+    { id: 'ninja', num: '09', name: '忍者', arch: 'assassin', archName: '刺客', hp: 1.5, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '瞬身连撞', activeDesc: '斩杀任意单位后，可消耗1次技能免费向距离1的另1单位突进撞击（1伤，先扣裤，0裤扣命）；撞死可连撞！', passiveName: '弹刃·利刃', passiveDesc: '自带独立 SQ2 利刃；开局及每次复活后处于未弹刃态，首次发动任何攻击前须先耗 1 步「⚡ 弹刃」解锁（本条命永久生效）。', brief: '先弹刃解锁 + SQ2 利刃 + 斩杀连撞' },
+    { id: 'puppeteer', num: '10', name: '操偶师', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '提线木偶', activeDesc: '耗1步强控同层级1名存活玩家（迷雾禁跨点），令其立刻执行1次基础动作（单人移动 / 穿裤 / 拔刀 / 同地点扒裤）。', passiveName: '丝线操纵', passiveDesc: '可借敌之手扒裤、把敌人拉出掩体或送进绝境。', brief: '远程强控同层目标执行动作' },
+    { id: 'parasite', num: '11', name: '寄生者', arch: 'assassin', archName: '刺客', hp: 1.5, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '寄生', activeDesc: '同地点耗1步附身目标，免费随行并共享氧气/面罩；宿主花1步扒裤甩开寄生者时，宿主自身也扣 0.5 裤；附身态可 0 步免费破体而出。', passiveName: '破体奇袭', passiveDesc: '破体而出不消耗步数，且破体「咔」额外 +0.5 伤（仍消耗 1 刀）。', brief: '0步破体 +0.5伤 + 甩开反扣宿主裤' },
+    { id: 'mirror', num: '12', name: '镜像师', arch: 'trick', archName: '诡计', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '盗版', activeDesc: '耗1步复刻并立刻释放本局上一个被使用的主动技（含海王潜海、收尸人封魂/烧尸等；无先例则 +1 刀 +0.5 裤）。', passiveName: '无限反射', passiveDesc: '以彼之道还施彼身，根据战局动态复制最强控制或爆发。', brief: '复制本局上一个主动技即时释放' },
+    { id: 'reverser', num: '13', name: '逆转者', arch: 'trick', archName: '诡计', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '越输越强，一朝翻盘打出多步连击终结战场。', passiveName: '蓄势逆转', passiveDesc: '每输 1 轮猜拳存 1 层「势」（上限 2）；赢拳引爆全部势额外加步；但主猜拳每出现 1 次平局，立刻扣除 1 层势。', brief: '输拳攒势爆发 · 平局扣1势' },
+    { id: 'barrier', num: '14', name: '结界师', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '绝对领域', activeDesc: '耗1步远程封锁任意非狱内地点直至下回合末，内外彻底隔绝（无视水遁、云梯、风暴与进出移动）。', passiveName: '空间锁死', passiveDesc: '可将关键地点变作孤岛，瓮中捉鳖或锁死海空缺氧者。', brief: '远程绝对封锁地点至下回合末' },
+    { id: 'curser', num: '15', name: '诅咒师', arch: 'trick', archName: '诡计', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '命运链接', activeDesc: '耗1步远程绑定任意 2 名存活玩家持续 2 回合（迷雾禁跨点），期间一方扣裤或扣血时另一方同步承受同等代价。', passiveName: '血咒共振', passiveDesc: '强行制造双人共死困局，令肉盾与通缉犯无处可逃。', brief: '绑定 2 人共担扣裤与伤害 2 回合' },
+    { id: 'undertaker', num: '16', name: '收尸人', arch: 'survival', archName: '生存', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '封魂', activeDesc: '耗1步远程销毁 1 名地府待复活者的复活资格并回 +0.5 命，或远程销毁场上任意 1 具尸体并回 +0.5 命。', passiveName: '敛尸成刃', passiveDesc: '场上有玩家阵亡自动 +1 刀；且每持有 2 把刀，「咔」伤害 +0.5（上限 +1.0）。', brief: '封魂/烧尸回血 + 每2刀增伤+0.5' }
   ];
 
   const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
 
   const STATIC_NODES = [
-    { id: 'sky_one', name: '天一·云阶', layer: 'sky', x: 20, y: 52, kind: 'sky_step1', collapsible: true, desc: '升天过渡点。回合末滞留此地将强制坠落（落陆 -2 命；落海无伤但摔坏氧气瓶）。' },
-    { id: 'sky_stable', name: '马厩', layer: 'sky', x: 48, y: 26, kind: 'stable', collapsible: true, desc: '天二地点：耗 1 步安全降落至陆地任意非狱内地点。' },
-    { id: 'sky_wish', name: '许愿池', layer: 'sky', x: 78, y: 44, kind: 'wish', collapsible: true, desc: '天二地点：个人累计投入 3 步发动终极许愿（复活/换位/削氧/入狱/全图缴械）。' },
-    { id: 'sky_observatory', name: '天象台', layer: 'sky', x: 52, y: 76, kind: 'observatory', collapsible: true, desc: '天二地点：耗 1 步改写下回合全图天象（血月 / 迷雾 / 雷暴）。' },
+    { id: 'sky_stable', name: '马厩', layer: 'sky', x: 26, y: 36, kind: 'stable', collapsible: true, desc: '天空层：耗 1 步天马空降陆地任意非狱内非结界点，落地免费扒 1 名目标 1 裤（无目标则免费 +1🔪）。' },
+    { id: 'sky_wish', name: '许愿池', layer: 'sky', x: 76, y: 40, kind: 'wish', collapsible: true, desc: '天空层：个人累计投入 2 步发动自利神迹（含神赐重整/抽干氧源/全图缴械/复活/换位/入狱）。' },
+    { id: 'sky_observatory', name: '天象台', layer: 'sky', x: 50, y: 74, kind: 'observatory', collapsible: true, desc: '天空层：耗 1 步改写下回合天象（血月 / 迷雾 / 雷暴），施法者独享下回合主场特权！' },
 
-    { id: 'land_police', name: '警察局', layer: 'land', x: 24, y: 24, kind: 'police', collapsible: true, desc: '1步远程三局两胜逮捕；1步搬尸回 +0.5 HP；1步自首入狱。' },
+    { id: 'land_police', name: '警察局', layer: 'land', x: 24, y: 24, kind: 'police', collapsible: true, desc: '1步远程三局两胜逮捕（迷雾禁跨点）；1步搬尸回 +0.5 HP；1步自首入狱。' },
     { id: 'land_prison_out', name: '监狱外', layer: 'land', x: 50, y: 20, kind: 'prison_out', collapsible: true, desc: '常驻无限刷新 NPC 典狱长（3裤1命），击杀后狱内全员立刻释放！' },
     { id: 'land_prison_in', name: '监狱内', layer: 'land', x: 74, y: 20, kind: 'prison_in', collapsible: false, desc: '与外界物理隔离。可直接扒/咔典狱长自行越狱，或等待外界劫狱、海王水遁逃生。' },
     { id: 'land_dock', name: '码头', layer: 'land', x: 22, y: 76, kind: 'dock', collapsible: true, desc: '耗 1 步下海前往水族馆、遗迹或龙宫。' },
-    { id: 'land_blackmarket', name: '黑市', layer: 'land', x: 52, y: 78, kind: 'blackmarket', collapsible: true, desc: '耗 1 步不猜拳，随机抽取 3 份恶魔契约择一签下（或放弃）。' },
+    { id: 'land_blackmarket', name: '黑市', layer: 'land', x: 52, y: 78, kind: 'blackmarket', collapsible: true, desc: '耗 1 步（普通人每回合首次 0 步）不猜拳，随机抽取 3 份恶魔契约择一签下。' },
     { id: 'land_underworld', name: '地府', layer: 'land', x: 80, y: 74, kind: 'underworld', collapsible: true, desc: '普通陆地地点（活人可堵门），也是阵亡者赢拳复活后的出生之地。' },
 
     { id: 'ocean_aquarium', name: '水族馆', layer: 'ocean', x: 24, y: 48, kind: 'aquarium', collapsible: true, desc: '耗 1 步佩戴青蛙面罩（永久水下呼吸，代价：裤清零且上限永久 0，HP 变为 0.5）。' },
-    { id: 'ocean_ruins', name: '遗迹', layer: 'ocean', x: 54, y: 66, kind: 'ruins', collapsible: true, desc: '受击享 50% 闪避；耗 1 步挖掘（25% 成功令裤上限暴增至 10）。' },
+    { id: 'ocean_ruins', name: '遗迹', layer: 'ocean', x: 54, y: 66, kind: 'ruins', collapsible: true, desc: '受击享 50% 闪避；耗 1 步挖掘（25% 裤上限→10；75% 保底 +0.5 裤上限至 4，已 ≥4 则 +0.5 裤）。' },
     { id: 'ocean_palace', name: '龙宫', layer: 'ocean', x: 78, y: 38, kind: 'palace', collapsible: true, desc: '全服共享进度锻造 8 件唯一神器（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）。' }
   ];
 
@@ -140,7 +140,10 @@
       phase: 'lobby',
       turn: 0,
       weather: 'clear',
+      weatherOwnerId: null,
       nextWeather: null,
+      nextWeatherOwnerId: null,
+      nextCollapseNodeId: null,
       config: { ...DEFAULT_CONFIG },
       lobbyPlayers: [],
       players: [],
@@ -181,6 +184,9 @@
     mobileLobbyTab: 'room',
     unreadLogCount: 0,
     lastLogCount: 0,
+    focusLayer: 'all',
+    pulsingNodes: new Map(),
+    confirmArm: null,
     pendingTimers: []
   };
 
@@ -229,9 +235,34 @@
     return s;
   }
 
-  function addLog(text, kind = 'normal') {
-    state.logs.push({ id: uid('log'), turn: state.turn, text, kind });
+  function addLog(text, kind = 'normal', meta = null) {
+    const m = meta || {};
+    state.logs.push({
+      id: uid('log'),
+      turn: state.turn,
+      text,
+      kind,
+      actorId: m.actorId || null,
+      targetIds: Array.isArray(m.targetIds) ? m.targetIds : [],
+      locId: m.locId || null,
+      isMoveToLoc: Boolean(m.isMoveToLoc)
+    });
     if (state.logs.length > 140) state.logs.splice(0, state.logs.length - 140);
+  }
+
+  function triggerNodePulse(nodeId) {
+    if (!nodeId) return;
+    const expireAt = Date.now() + 3000;
+    localUI.pulsingNodes.set(nodeId, expireAt);
+    const el = document.querySelector(`.map-node[data-node-id="${CSS.escape(String(nodeId))}"]`);
+    if (el) el.classList.add('is-recent-pulse');
+    window.setTimeout(() => {
+      if ((localUI.pulsingNodes.get(nodeId) || 0) <= Date.now()) {
+        localUI.pulsingNodes.delete(nodeId);
+        const curEl = document.querySelector(`.map-node[data-node-id="${CSS.escape(String(nodeId))}"]`);
+        if (curEl) curEl.classList.remove('is-recent-pulse');
+      }
+    }, 3050);
   }
 
   function scheduleHostTask(fn, ms) {
@@ -251,7 +282,7 @@
     state.fxSeq += 1;
     const ev = { seq: state.fxSeq, type, payload };
     state.recentFx.push(ev);
-    if (state.recentFx.length > 32) state.recentFx.splice(0, state.recentFx.length - 32);
+    if (state.recentFx.length > 36) state.recentFx.splice(0, state.recentFx.length - 36);
     playFxEvent(ev);
     localUI.lastFxSeqPlayed = Math.max(localUI.lastFxSeqPlayed, ev.seq);
   }
@@ -263,15 +294,17 @@
     switch (ev.type) {
       case 'banner': vfx.banner(p.kicker, p.title, p.sub, p.mood, p.durationMs); break;
       case 'bannerAction': vfx.bannerAction(p); break;
-      case 'slash': vfx.slash(p); break;
-      case 'electricArc': vfx.electricArc(p); break;
+      case 'tacticalFeed': vfx.tacticalFeed(p); break;
+      case 'nodePulse': triggerNodePulse(p.nodeId); break;
+      case 'slash': vfx.slash(p); if (p.nodeId) triggerNodePulse(p.nodeId); break;
+      case 'electricArc': vfx.electricArc(p); if (p.toNodeId) triggerNodePulse(p.toNodeId); break;
       case 'float': vfx.floatOnNode(p.nodeId, p.text, p.kind); break;
-      case 'ripple': vfx.rippleOnNode(p.nodeId, p.color, p.rings); break;
+      case 'ripple': vfx.rippleOnNode(p.nodeId, p.color, p.rings); if (p.nodeId) triggerNodePulse(p.nodeId); break;
       case 'rpsClash': vfx.rpsClash(p); break;
       case 'sfx': vfx.sfx(p.name); break;
       case 'mood': vfx.setMood(p.mood); break;
-      case 'weather': vfx.setWeather(p.weather); break;
-      case 'toast': vfx.toast(p.msg, p.level); break;
+      case 'weather': vfx.setWeather(p.weather, state.weather === 'fog' && state.weatherOwnerId === state.selfId); break;
+      case 'toast': vfx.toast(p.msg, p.level, p.durationMs); break;
       default: break;
     }
   }
@@ -697,7 +730,7 @@
         }
 
         if (state.started) {
-          window.VFX?.setWeather(state.weather);
+          window.VFX?.setWeather(state.weather, state.weather === 'fog' && state.weatherOwnerId === state.selfId);
           syncMoodFromState();
         } else if (prevStarted && !state.started) {
           UI.closeModal?.();
@@ -841,7 +874,43 @@
       UI.renderLobby?.();
     }
 
-    return { createRoom, joinRoom, startSolo, teardownPeer, broadcastState, sendToastTo, sendRoleSelect, sendIntent, sendChat, sendEmoji, applyHostConfig, copyInviteLink, addLobbyAi, removeLobbySeat };
+    function setLobbySeatRole(seatId, roleId) {
+      if (!isHostAuthority() || state.started || !ROLE_MAP[roleId]) return;
+      const seat = state.lobbyPlayers.find((p) => p.id === seatId);
+      if (!seat) return;
+      seat.roleId = roleId;
+      broadcastState();
+      UI.renderLobby?.();
+    }
+
+    function syncSoloAiCount(targetTotal) {
+      if (!isHostAuthority() || state.started) return;
+      const target = clamp(Number(targetTotal) || 4, 2, 8);
+      while (state.lobbyPlayers.length < target) {
+        const randRole = ROLES[Math.floor(Math.random() * ROLES.length)].id;
+        state.lobbyPlayers.push({
+          id: uid('ai'),
+          name: pickUniqueAiName(state.lobbyPlayers),
+          roleId: randRole,
+          isHost: false,
+          isAI: true,
+          connected: true,
+          peerId: 'ai'
+        });
+      }
+      while (state.lobbyPlayers.length > target) {
+        let idx = -1;
+        for (let i = state.lobbyPlayers.length - 1; i >= 0; i--) {
+          if (state.lobbyPlayers[i].isAI) { idx = i; break; }
+        }
+        if (idx === -1) break;
+        state.lobbyPlayers.splice(idx, 1);
+      }
+      broadcastState();
+      UI.renderLobby?.();
+    }
+
+    return { createRoom, joinRoom, startSolo, teardownPeer, broadcastState, sendToastTo, sendRoleSelect, sendIntent, sendChat, sendEmoji, applyHostConfig, copyInviteLink, addLobbyAi, removeLobbySeat, setLobbySeatRole, syncSoloAiCount };
   })();
 
   // ========================================================================
@@ -992,12 +1061,40 @@
     return false;
   }
 
+  function isFogBlockedFor(actor) {
+    return state.weather === 'fog' && state.weatherOwnerId !== actor?.id;
+  }
+
+  function isStormImmune(actor) {
+    return state.weather === 'storm' && state.weatherOwnerId === actor?.id;
+  }
+
+  function isOceanOxygenImmune(player) {
+    if (!player) return false;
+    if (player.roleId === 'aquaman') return true;
+    return hasEffectiveFrogMask(player);
+  }
+
   function isHypoxic(player) {
     if (!player || player.status !== 'alive') return false;
     const node = getNode(player.location);
     if (!node || node.layer === 'land') return false;
-    if (node.layer === 'ocean' && hasEffectiveFrogMask(player)) return false;
+    if (node.layer === 'ocean' && isOceanOxygenImmune(player)) return false;
     return player.oxygenTurns >= Math.max(1, state.config.oxygenMax - 2);
+  }
+
+  function getZeroPantsTargetsAt(actor, nodeId) {
+    const out = [];
+    const node = getNode(nodeId);
+    getAlivePlayersAt(nodeId, actor.id).forEach((p) => {
+      if (p.pants <= 0 && !needsPinchPigFace(actor, p)) {
+        out.push({ id: p.id, name: p.name, hp: p.hp, isWarden: false, player: p });
+      }
+    });
+    if (canAttackWardenFrom(node) && state.warden.pants <= 0) {
+      out.push({ id: 'NPC_WARDEN', name: 'NPC 典狱长', hp: state.warden.hp, isWarden: true, player: null });
+    }
+    return out;
   }
 
   function getReachableMoveNodes(player, opts = {}) {
@@ -1017,13 +1114,11 @@
 
     if (cur.layer === 'land') {
       allNodes.filter((n) => n.layer === 'land').forEach(add);
-      const skyOne = state.nodes.sky_one;
-      if (skyOne && !skyOne.collapsed && !isBarrierActive(skyOne.id)) add(skyOne);
       if (cur.kind === 'dock') {
         allNodes.filter((n) => n.layer === 'ocean').forEach(add);
       }
-      if (hasSQ(player, 'SQ4') && !opts.ignoreSQ4) {
-        allNodes.filter((n) => n.layer === 'sky' && n.id !== 'sky_one').forEach(add);
+      if (player.ascendCharged || (hasSQ(player, 'SQ4') && !opts.ignoreSQ4)) {
+        allNodes.filter((n) => n.layer === 'sky').forEach(add);
       }
     } else if (cur.layer === 'ocean') {
       allNodes.filter((n) => n.layer === 'ocean').forEach(add);
@@ -1034,12 +1129,12 @@
         allNodes.filter((n) => n.layer === 'land').forEach(add);
       }
       if (hasSQ(player, 'SQ4') && !opts.ignoreSQ4) {
-        allNodes.filter((n) => n.layer === 'sky' && n.id !== 'sky_one').forEach(add);
+        allNodes.filter((n) => n.layer === 'sky').forEach(add);
       }
     } else if (cur.layer === 'sky') {
-      allNodes.filter((n) => n.layer === 'sky' && n.id !== 'sky_one').forEach(add);
+      allNodes.filter((n) => n.layer === 'sky').forEach(add);
       if (cur.kind === 'stable' || (hasSQ(player, 'SQ4') && !opts.ignoreSQ4)) {
-        const dropPool = hasSQ(player, 'SQ4') ? allNodes : allNodes.filter((n) => n.layer === 'land');
+        const dropPool = (hasSQ(player, 'SQ4') && !opts.ignoreSQ4) ? allNodes : allNodes.filter((n) => n.layer === 'land');
         dropPool.forEach(add);
       }
     }
@@ -1117,7 +1212,7 @@
 
     if (!silent) {
       const carryStr = carriedNames.length ? `（强行带走 ${carriedNames.join('、')}）` : '';
-      addLog(`➤ ${player.name} 移动至【${destNode.name}】${carryStr}`, 'normal');
+      addLog(`➤ ${player.name} 移动至【${destNode.name}】${carryStr}`, 'normal', { actorId: player.id, targetIds: carryIds, locId: destId, isMoveToLoc: true });
       emitFx('ripple', { nodeId: destId, color: '#00d4ff', rings: 1 });
     }
     return true;
@@ -1329,6 +1424,9 @@
     p.stealth = null;
     p.parasiteHostId = null;
     p.wanted = false;
+    p.ascendCharged = false;
+    p.bladeReady = p.roleId !== 'ninja';
+    p.blackMarketFreeTurn = 0;
 
     if (viaWish) {
       p.hp = 1;
@@ -1342,7 +1440,7 @@
       p.knives = role.knives;
       p.activeCharges = role.activeMax;
       p.momentum = 0;
-      p.shield = 0;
+      p.shield = p.roleId === 'normal' ? 1 : 0;
       p.wishSteps = 0;
       p.piggyStealArmed = false;
       p.pigFaceGen += 1;
@@ -1382,7 +1480,10 @@
       state.started = true;
       state.turn = 0;
       state.weather = 'clear';
+      state.weatherOwnerId = null;
       state.nextWeather = null;
+      state.nextWeatherOwnerId = null;
+      state.nextCollapseNodeId = null;
       state.winnerId = null;
       state.winnerReason = '';
       state.lastActiveSkill = null;
@@ -1410,12 +1511,13 @@
           status: 'alive',
           hp: role.hp, pants: role.pants, maxPants: role.maxPants, knives: role.knives,
           atkMult: role.atkMult, activeCharges: role.activeMax,
-          steps: 0, deferredSteps: 0, savedSteps: 0, momentum: 0, shield: 0,
+          steps: 0, deferredSteps: 0, savedSteps: 0, momentum: 0, shield: role.id === 'normal' ? 1 : 0,
           pigFaceGen: 1, pinchedFaces: [], wishSteps: 0,
+          ascendCharged: false, bladeReady: role.id !== 'ninja',
           oxygenTurns: 0, enteredNonLandTurn: 0, breathedThisTurn: false,
           oxygenTank: true, antiSuffocate: 0, frogMask: false,
           paralyzed: false, paralyzedNextTurn: false, guaranteedStepNextTurn: false,
-          blackMarketRerollTurn: 0, piggyStealArmed: false,
+          blackMarketRerollTurn: 0, blackMarketFreeTurn: 0, piggyStealArmed: false,
           parasiteHostId: null, stealth: null, bomb: null,
           kills: 0, wanted: false, reviveUsed: false, reviveEligibleTurn: 0,
           homeId: '', location: ''
@@ -1449,13 +1551,33 @@
       state.activePlayerId = null;
 
       state.weather = state.nextWeather || 'clear';
+      state.weatherOwnerId = state.nextWeather ? state.nextWeatherOwnerId : null;
       state.nextWeather = null;
+      state.nextWeatherOwnerId = null;
       emitFx('weather', { weather: state.weather });
 
       if (state.weather !== 'clear') {
         const wMeta = WEATHERS[state.weather];
-        addLog(`🌌 天象【${wMeta.name}】：${wMeta.desc}`, 'system');
-        emitFx('banner', { kicker: 'WEATHER SHIFT // 天象降临', title: wMeta.name, sub: wMeta.desc, mood: wMeta.mood, durationMs: 2200 });
+        const wOwner = state.weatherOwnerId ? getPlayer(state.weatherOwnerId) : null;
+        const ownerNote = wOwner && wOwner.status === 'alive' ? `（主宰：${wOwner.name}）` : '';
+        addLog(`🌌 天象【${wMeta.name}】${ownerNote}：${wMeta.desc}`, 'system');
+        emitFx('banner', { kicker: 'WEATHER SHIFT // 天象降临', title: `${wMeta.name}${ownerNote}`, sub: wMeta.desc, mood: wMeta.mood, durationMs: 2400 });
+
+        if (wOwner && wOwner.status === 'alive') {
+          if (state.weather === 'bloodmoon') {
+            wOwner.knives += 1;
+            addLog(`🩸 天象主宰 ${wOwner.name} 血月加持，自动 +1🔪！`, 'skill');
+            emitFx('float', { nodeId: wOwner.location, text: '血月主宰 +1🔪', kind: 'skill' });
+          } else if (state.weather === 'storm') {
+            const beforeP = wOwner.pants;
+            wOwner.pants = Math.min(wOwner.maxPants, roundHalf(wOwner.pants + 0.5));
+            const gP = roundHalf(wOwner.pants - beforeP);
+            if (gP > 0) {
+              addLog(`⛈ 天象主宰 ${wOwner.name} 雷暴加持，免疫禁穿裤且自动 +${gP}👖！`, 'skill');
+              emitFx('float', { nodeId: wOwner.location, text: `雷暴主宰 +${gP}👖`, kind: 'heal' });
+            }
+          }
+        }
       }
 
       state.links = state.links.filter((lk) => lk.expiresTurn >= state.turn);
@@ -1554,7 +1676,15 @@
         return { name: p?.name || '特工', hand: h, outcome, tag };
       });
 
-      if (!isDraw) {
+      if (isDraw) {
+        state.players.forEach((p) => {
+          if (p.status === 'alive' && p.roleId === 'reverser' && p.momentum > 0) {
+            p.momentum -= 1;
+            addLog(`🌀 猜拳平局！逆转者 ${p.name} 失去 1 层「势」（剩 ${p.momentum}/2）`, 'skill', { targetIds: [p.id] });
+            emitFx('float', { nodeId: p.location, text: `平局 -1势 (${p.momentum}/2)`, kind: 'pants' });
+          }
+        });
+      } else {
         const winNames = winners.map((id) => getPlayer(id)?.name).join('、');
         addLog(`✊ 猜拳：${winNames} 胜（各+${losersCount}步）`, 'system');
       }
@@ -1833,7 +1963,7 @@
         desc = `暗中单人移动至【${getNode(intent.destId)?.name}】`;
       } else if (act === 'wear_pants') {
         const cur = getNode(raider.location);
-        if (state.weather === 'storm' && cur?.layer === 'land') {
+        if (state.weather === 'storm' && cur?.layer === 'land' && !isStormImmune(raider)) {
           notifyPlayer(raider.id, '雷暴天象下陆地禁穿裤！', 'warn');
           return;
         }
@@ -1862,20 +1992,29 @@
       predictions.forEach((pred) => {
         const attacker = getPlayer(pred.predictorId);
         if (!attacker || raider.status !== 'alive') return;
+        const isStabPred = pred.mode === 'stab';
+        let stabDmg = 0;
+        if (isStabPred) {
+          if (attacker.knives < 1) {
+            addLog(`💨 ${attacker.name} 手中已无刀，预判斩击失效！`, 'normal');
+            return;
+          }
+          stabDmg = Engine.calcStabDamage(attacker);
+          attacker.knives -= 1;
+        }
         if (pred.loc === raider.location) {
           if (pred.mode === 'strip') {
             const lost = applyPantsLoss(raider, hasSQ(attacker, 'SQ1') ? 2 : 1, '预判扒裤');
-            addLog(`🎯 预判命中！${attacker.name} 在【${getNode(pred.loc)?.name}】截胡扒掉 ${raider.name} ${lost} 裤！`, 'kill');
+            addLog(`🎯 预判命中！${attacker.name} 在【${getNode(pred.loc)?.name}】截胡扒掉 ${raider.name} ${lost} 裤！`, 'kill', { actorId: attacker.id, targetIds: [raider.id] });
           } else if (raider.pants <= 0) {
-            const dmg = Engine.calcStabDamage(attacker);
-            addLog(`🎯 预判绝杀命中！${attacker.name} 在【${getNode(pred.loc)?.name}】斩中现身的 ${raider.name}（-${dmg} 命）！`, 'kill');
-            applyHpDamage(raider, dmg, attacker, { canDodge: true, reason: `被 ${attacker.name} 预判斩杀` });
+            addLog(`🎯 预判绝杀命中！${attacker.name} 耗1刀在【${getNode(pred.loc)?.name}】斩中现身的 ${raider.name}（-${stabDmg} 命）！`, 'kill', { actorId: attacker.id, targetIds: [raider.id] });
+            applyHpDamage(raider, stabDmg, attacker, { canDodge: true, reason: `被 ${attacker.name} 预判斩杀` });
           } else {
-            addLog(`🎯 ${attacker.name} 预判位置命中，但 ${raider.name} 有裤子护体未能「咔」中！`, 'skill');
+            addLog(`🎯 ${attacker.name} 预判位置命中（耗1刀），但 ${raider.name} 有裤子护体未能「咔」中！`, 'skill', { actorId: attacker.id, targetIds: [raider.id] });
             emitFx('float', { nodeId: raider.location, text: '有裤免疫!', kind: 'info' });
           }
         } else {
-          addLog(`💨 预判扑空！${attacker.name} 在【${getNode(pred.loc)?.name}】挥空了！`, 'normal');
+          addLog(`💨 预判扑空！${attacker.name} 在【${getNode(pred.loc)?.name}】挥空${isStabPred ? '（耗1刀）' : ''}！`, 'normal');
           emitFx('float', { nodeId: pred.loc, text: 'MISS!', kind: 'miss' });
           emitFx('sfx', { name: 'miss' });
         }
@@ -1899,10 +2038,14 @@
       Engine.nextStealthReveal();
     },
 
-    calcStabDamage(attacker) {
+    calcStabDamage(attacker, opts = {}) {
       let dmg = 1 * (attacker.atkMult || 1);
+      if (attacker.roleId === 'undertaker') {
+        dmg += Math.min(1.0, Math.floor((attacker.knives || 0) / 2) * 0.5);
+      }
       if (hasSQ(attacker, 'SQ1')) dmg *= 2;
       if (state.weather === 'bloodmoon') dmg += 0.5;
+      if (opts.parasiteBurstBonus) dmg += 0.5;
       if (isHypoxic(attacker)) dmg *= 0.5;
       return Math.max(0.5, roundHalf(dmg));
     },
@@ -1925,6 +2068,14 @@
         return false;
       };
 
+      const checkFogRemoteBlock = (targetLocId, label) => {
+        if (isFogBlockedFor(actor) && targetLocId && targetLocId !== actor.location) {
+          notifyPlayer(actor.id, `迷雾天象遮蔽视野，无法跨地点远程使用【${label}】！`, 'warn');
+          return true;
+        }
+        return false;
+      };
+
       if (act === 'pass_bomb') {
         if (!actor.bomb) return;
         const target = getPlayer(intent.targetId);
@@ -1932,9 +2083,10 @@
         if (checkPigFaceBlock(target)) return;
         target.bomb = { turnsLeft: actor.bomb.turnsLeft };
         actor.bomb = null;
-        addLog(`💣 ${actor.name} 贴脸将人体炸弹（剩 ${target.bomb.turnsLeft} 回合）过继给了 ${target.name}！`, 'kill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '炸弹过继', target: target.name, result: `剩余 ${target.bomb.turnsLeft} 回合`, mood: 'p5r' });
+        addLog(`💣 ${actor.name} 贴脸将人体炸弹（剩 ${target.bomb.turnsLeft} 回合）过继给了 ${target.name}！`, 'kill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '炸弹过继', target: target.name, result: `剩余 ${target.bomb.turnsLeft} 回合`, mood: 'p5r', highlight: true });
         emitFx('float', { nodeId: target.location, text: '💣 接雷!', kind: 'dmg' });
+        emitFx('nodePulse', { nodeId: target.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -1943,12 +2095,40 @@
         if (hasSQ(actor, 'SQ7') && actor.steps > 0) {
           actor.savedSteps = 1;
           actor.steps = 0;
-          addLog(`⏳ ${actor.name} 用【沙漏】储存 +1步 至下回合`, 'skill');
+          addLog(`⏳ ${actor.name} 用【沙漏】储存 +1步 至下回合`, 'skill', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '沙漏存步', result: '储存 +1步 至下回合' });
           emitFx('float', { nodeId: actor.location, text: '⏳ 存1步', kind: 'skill' });
         } else {
           actor.steps = 0;
-          addLog(`⏭ ${actor.name} 结束行动`, 'muted');
+          addLog(`⏭ ${actor.name} 结束行动`, 'muted', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '结束行动', result: '本回合待机' });
         }
+        Engine.finishCurrentActorIfDone(actor);
+        return;
+      }
+
+      if (act === 'blade_draw') {
+        if (actor.steps < 1 || actor.roleId !== 'ninja' || actor.bladeReady) return;
+        actor.steps -= 1;
+        actor.bladeReady = true;
+        addLog(`⚡ 忍者 ${actor.name} 发动【弹刃】解锁攻击态（本条命永久生效）！`, 'skill', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '弹刃', result: '攻击态已解锁！' });
+        emitFx('float', { nodeId: actor.location, text: '⚡ 弹刃就绪!', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
+        emitFx('sfx', { name: 'knife' });
+        Engine.finishCurrentActorIfDone(actor);
+        return;
+      }
+
+      if (act === 'charge_ascend') {
+        if (actor.steps < 1 || !curNode || curNode.layer !== 'land' || curNode.kind === 'prison_in' || actor.ascendCharged || actor.parasiteHostId) return;
+        actor.steps -= 1;
+        actor.ascendCharged = true;
+        addLog(`☁ ${actor.name} 完成【升天蓄力】，本条命永久解锁陆地 1 步直飞天空！`, 'skill', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '升天蓄力', result: '解锁陆地直飞天空' });
+        emitFx('float', { nodeId: actor.location, text: '☁ 升天已蓄力', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
+        emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -1956,29 +2136,70 @@
       if (act === 'move') {
         if (actor.steps < 1) return;
         if (actor.parasiteHostId) { notifyPlayer(actor.id, '寄生附身态无法普通移动，请使用「破体而出」', 'warn'); return; }
-        if (!getReachableMoveNodes(actor).some((n) => n.id === intent.destId)) { notifyPlayer(actor.id, '目标地点不可直达或被结界封锁', 'warn'); return; }
-        const carryIds = Array.isArray(intent.carryIds) ? intent.carryIds : [];
-        for (const cid of carryIds) {
-          const ct = getPlayer(cid);
-          if (ct && checkPigFaceBlock(ct)) return;
+        const destNode = getNode(intent.destId);
+        if (!destNode || !getReachableMoveNodes(actor).some((n) => n.id === intent.destId)) {
+          notifyPlayer(actor.id, '目标地点不可直达或被结界封锁', 'warn');
+          return;
         }
+        const rawCarry = Array.isArray(intent.carryIds) ? intent.carryIds.filter(Boolean) : [];
+        if (rawCarry.length > 1) {
+          notifyPlayer(actor.id, '单次移动最多只能强带 1 名同地点玩家！', 'warn');
+          return;
+        }
+        for (const cid of rawCarry) {
+          const ct = getPlayer(cid);
+          if (!ct || !isVisibleAlive(ct) || ct.location !== actor.location || ct.id === actor.id || ct.parasiteHostId) continue;
+          if (checkPigFaceBlock(ct)) return;
+          if (actor.knives === 0 && ct.knives >= 1) {
+            notifyPlayer(actor.id, `持刀威慑：你手里无刀，无法强行带走持刀的 ${ct.name}！`, 'warn');
+            return;
+          }
+        }
+
+        const isStableDrop = curNode?.kind === 'stable' && destNode.layer === 'land';
         actor.steps -= 1;
-        movePlayerTo(actor, intent.destId, { carryIds });
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '移动', target: getNode(intent.destId)?.name || '', result: carryIds.length ? `强行携带 ${carryIds.length} 人` : '抵达目标地点' });
+        movePlayerTo(actor, intent.destId, { carryIds: rawCarry });
+
+        let stableBonusText = '';
+        if (isStableDrop) {
+          const strippables = getAlivePlayersAt(destNode.id, actor.id).filter((t) => !needsPinchPigFace(actor, t) && t.pants > 0);
+          if (strippables.length > 0) {
+            const chosen = (intent.stableTargetId && strippables.find((t) => t.id === intent.stableTargetId)) || strippables[0];
+            const lost = applyPantsLoss(chosen, 1, '天马空降');
+            stableBonusText = `天马空降扒 ${chosen.name} -${lost}👖`;
+            addLog(`🐎 ${actor.name} 【天马空降】落点奇袭，免费扒掉 ${chosen.name} ${lost}👖！`, 'skill', { actorId: actor.id, targetIds: [chosen.id], locId: destNode.id });
+            emitFx('float', { nodeId: destNode.id, text: `🐎 空降 -${lost}👖`, kind: 'pants' });
+          } else {
+            actor.knives += 1;
+            stableBonusText = '天马空降 +1🔪';
+            addLog(`🐎 ${actor.name} 【天马空降】落点无目标，免费获得 +1🔪！`, 'skill', { actorId: actor.id, locId: destNode.id });
+            emitFx('float', { nodeId: destNode.id, text: '🐎 空降 +1🔪', kind: 'skill' });
+            emitFx('sfx', { name: 'knife' });
+          }
+        }
+
+        const moveRes = stableBonusText || (rawCarry.length ? `强带 ${getPlayer(rawCarry[0])?.name || '1人'}` : '抵达目标地点');
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: isStableDrop ? '天马空降' : '移动', target: `【${destNode.name}】`, result: moveRes });
+        emitFx('nodePulse', { nodeId: destNode.id });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
       if (act === 'wear_pants') {
         if (actor.steps < 1) return;
-        if (state.weather === 'storm' && curNode?.layer === 'land') { notifyPlayer(actor.id, '雷暴天象下陆地禁止穿裤！', 'warn'); return; }
+        if (state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(actor)) {
+          notifyPlayer(actor.id, '雷暴天象下陆地禁止穿裤！', 'warn');
+          return;
+        }
         if (actor.pants >= actor.maxPants) { notifyPlayer(actor.id, '裤子已达上限', 'warn'); return; }
         actor.steps -= 1;
         const before = actor.pants;
         actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + 1));
         const gain = roundHalf(actor.pants - before);
-        addLog(`👖 ${actor.name} 穿裤 +${gain}👖 (${actor.pants}/${actor.maxPants})`, 'normal');
+        addLog(`👖 ${actor.name} 穿裤 +${gain}👖 (${actor.pants}/${actor.maxPants})`, 'normal', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '穿裤', result: `+${gain}👖 (${actor.pants}/${actor.maxPants})` });
         emitFx('float', { nodeId: actor.location, text: `+${gain}👖`, kind: 'heal' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'click' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -1988,8 +2209,10 @@
         if (actor.steps < 1) return;
         actor.steps -= 1;
         actor.knives += 1;
-        addLog(`🔪 ${actor.name} 拔刀 +1🔪 (共${actor.knives})`, 'normal');
+        addLog(`🔪 ${actor.name} 拔刀 +1🔪 (共${actor.knives})`, 'normal', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '拔刀', result: `+1🔪 (共${actor.knives}刀)` });
         emitFx('float', { nodeId: actor.location, text: '+1🔪', kind: 'info' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'knife' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2003,9 +2226,10 @@
         actor.steps -= 1;
         target.knives -= 1;
         actor.knives += 1;
-        addLog(`✋ ${actor.name} 贴脸抢走了 ${target.name} 的 1 把刀！`, 'normal');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '抢刀', target: target.name, result: '+1🔪' });
+        addLog(`✋ ${actor.name} 贴脸抢走了 ${target.name} 的 1 把刀！`, 'normal', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '抢刀', target: target.name, result: '+1🔪' });
         emitFx('float', { nodeId: actor.location, text: '抢刀 +1🔪', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'knife' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2019,8 +2243,10 @@
         actor.steps -= 1;
         target.oxygenTank = false;
         actor.oxygenTank = true;
-        addLog(`🫧 ${actor.name} 贴脸抢走了 ${target.name} 的氧气瓶！`, 'skill');
+        addLog(`🫧 ${actor.name} 贴脸抢走了 ${target.name} 的氧气瓶！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '抢氧气瓶', target: target.name, result: '夺取供氧设备' });
         emitFx('float', { nodeId: actor.location, text: '抢走氧气瓶!', kind: 'pants' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2033,8 +2259,10 @@
         if (keys.length === 0) return;
         actor.steps -= 1;
         keys.forEach((k) => { if (!actor.pinchedFaces.includes(k)) actor.pinchedFaces.push(k); });
-        addLog(`🐷 ${actor.name} 贴脸捏了 ${target.name} 的猪脸，解除互动限制！`, 'skill');
+        addLog(`🐷 ${actor.name} 贴脸捏了 ${target.name} 的猪脸，解除互动限制！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '捏猪脸', target: target.name, result: '解除猪脸限制' });
         emitFx('float', { nodeId: actor.location, text: '🐷 已捏脸!', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2049,8 +2277,10 @@
           const before = state.warden.pants;
           state.warden.pants = Math.max(0, roundHalf(state.warden.pants - power));
           const lost = roundHalf(before - state.warden.pants);
-          addLog(`👖 ${actor.name} 扒掉典狱长 ${lost} 裤（剩余 ${state.warden.pants}）`, 'normal');
+          addLog(`👖 ${actor.name} 扒掉典狱长 ${lost} 裤（剩余 ${state.warden.pants}）`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '扒裤', target: 'NPC 典狱长', result: `-${lost}👖 (剩 ${state.warden.pants})` });
           emitFx('float', { nodeId: actor.location, text: `典狱长 -${lost}👖`, kind: 'pants' });
+          emitFx('nodePulse', { nodeId: actor.location });
           emitFx('sfx', { name: 'pants' });
           Engine.finishCurrentActorIfDone(actor);
           return;
@@ -2060,20 +2290,78 @@
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         const lost = applyPantsLoss(target, power, '扒裤');
-        addLog(`👖 ${actor.name} 扒 ${target.name} -${lost}👖 (剩${target.pants})`, 'normal');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: hasSQ(actor, 'SQ1') ? '大刀重扒' : '扒裤', target: target.name, result: `-${lost}👖（剩 ${target.pants}）` });
+        addLog(`👖 ${actor.name} 扒 ${target.name} -${lost}👖 (剩${target.pants})`, 'normal', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: hasSQ(actor, 'SQ1') ? '大刀重扒' : '扒裤', target: target.name, result: `-${lost}👖（剩 ${target.pants}）` });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
       if (act === 'stab') {
         if (actor.steps < 1 || actor.knives < 1) return;
-        const dmg = Engine.calcStabDamage(actor);
+        if (actor.roleId === 'ninja' && !actor.bladeReady) {
+          notifyPlayer(actor.id, '忍者处于未弹刃状态！请先耗 1 步执行「⚡ 弹刃」解锁攻击！', 'warn');
+          return;
+        }
+        const totalDmg = Engine.calcStabDamage(actor);
+
+        // 突袭者「刃锋分伤」分支
+        if (actor.roleId === 'raider' && intent.splitAlloc && typeof intent.splitAlloc === 'object') {
+          const eligible = getZeroPantsTargetsAt(actor, actor.location);
+          if (eligible.length < 2) {
+            notifyPlayer(actor.id, '同地点 0 裤合法目标不足 2 名，无法分伤', 'warn');
+            return;
+          }
+          const eligibleMap = new Map(eligible.map((t) => [t.id, t]));
+          const entries = [];
+          let sum = 0;
+          for (const [tid, rawAmt] of Object.entries(intent.splitAlloc)) {
+            const amt = roundHalf(Number(rawAmt) || 0);
+            if (amt <= 0) continue;
+            if (!eligibleMap.has(tid)) { notifyPlayer(actor.id, '分伤包含无效目标', 'warn'); return; }
+            entries.push({ info: eligibleMap.get(tid), amt });
+            sum = roundHalf(sum + amt);
+          }
+          if (entries.length === 0 || sum !== totalDmg) {
+            notifyPlayer(actor.id, `分伤总额必须恰好等于 ${totalDmg}！`, 'warn');
+            return;
+          }
+
+          actor.steps -= 1;
+          actor.knives -= 1;
+          const summaryParts = [];
+          const hitTargetIds = [];
+          let anyKilled = false;
+
+          entries.forEach(({ info, amt }) => {
+            if (info.isWarden) {
+              Engine.damageWarden(actor, amt);
+              summaryParts.push(`典狱长-${amt}❤️`);
+            } else {
+              const t = info.player;
+              hitTargetIds.push(t.id);
+              Engine.tryPiggyStealKnife(actor, t);
+              const res = applyHpDamage(t, amt, actor, { canDodge: true, reason: `被突袭者 ${actor.name} 刃锋分伤斩杀` });
+              if (res.killed) anyKilled = true;
+              summaryParts.push(`${t.name}${res.dodged ? 'MISS' : res.blocked ? '护盾' : `-${amt}❤️`}`);
+            }
+          });
+
+          addLog(`⚔ 突袭者 ${actor.name} 耗1刀发动【刃锋分伤】(${totalDmg}伤)：${summaryParts.join(' / ')}`, 'kill', { actorId: actor.id, targetIds: hitTargetIds });
+          emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '刃锋分伤', target: `${entries.length}名目标`, result: summaryParts.join(' · '), mood: 'p5r', highlight: true });
+          emitFx('nodePulse', { nodeId: actor.location });
+          Engine.finishCurrentActorIfDone(actor);
+          return;
+        }
+
         if (intent.targetId === 'NPC_WARDEN') {
           if (!canAttackWardenFrom(curNode)) return;
           if (state.warden.pants > 0) { notifyPlayer(actor.id, '典狱长还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
           actor.steps -= 1;
-          Engine.damageWarden(actor, dmg);
+          actor.knives -= 1;
+          Engine.damageWarden(actor, totalDmg);
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '咔！(耗1刀)', target: 'NPC 典狱长', result: `-${totalDmg}❤️`, highlight: true });
+          emitFx('nodePulse', { nodeId: actor.location });
           Engine.finishCurrentActorIfDone(actor);
           return;
         }
@@ -2083,10 +2371,12 @@
         if (checkPigFaceBlock(target)) return;
 
         actor.steps -= 1;
+        actor.knives -= 1;
         Engine.tryPiggyStealKnife(actor, target);
-        const res = applyHpDamage(target, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 持刀「咔」死` });
-        addLog(res.dodged ? `🔪 ${actor.name} 咔 ${target.name} → MISS` : `🔪 ${actor.name} 绝杀咔 ${target.name} -${dmg}❤️`, 'kill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '咔！绝杀斩击', target: target.name, result: res.dodged ? 'MISS!' : res.killed ? '目标阵亡！' : `-${dmg}❤️`, mood: 'p5r' });
+        const res = applyHpDamage(target, totalDmg, actor, { canDodge: true, reason: `被 ${actor.name} 持刀「咔」死` });
+        addLog(res.dodged ? `🔪 ${actor.name} 耗1刀咔 ${target.name} → MISS` : res.blocked ? `🔪 ${actor.name} 耗1刀咔 ${target.name} → 被护盾挡下` : `🔪 ${actor.name} 耗1刀绝杀咔 ${target.name} -${totalDmg}❤️`, 'kill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '咔！绝杀斩击', target: target.name, result: res.dodged ? 'MISS! (耗1刀)' : res.blocked ? '护盾抵消 (耗1刀)' : res.killed ? '目标阵亡！' : `-${totalDmg}❤️`, mood: 'p5r', highlight: true });
+        emitFx('nodePulse', { nodeId: actor.location });
         if (res.killed) Engine.maybeTriggerNinjaChain(actor);
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2103,28 +2393,49 @@
           if (checkPigFaceBlock(target)) return;
         }
 
-        actor.steps -= 1;
-        movePlayerTo(actor, intent.destId, { carryIds: [], silent: true });
-        addLog(`⚡ ${actor.name} 发动【SQ2 利刃】突进至【${getNode(intent.destId)?.name}】！`, 'kill');
+        const isAttacking = Boolean(target || (intent.targetId === 'NPC_WARDEN' && intent.destId === 'land_prison_out'));
+        if (isAttacking && actor.roleId === 'ninja' && !actor.bladeReady) {
+          notifyPlayer(actor.id, '忍者未弹刃！请先耗 1 步执行「⚡ 弹刃」再发动利刃攻击！', 'warn');
+          return;
+        }
+
+        const willDealHpDamage = (target && target.pants <= 0) || (intent.targetId === 'NPC_WARDEN' && intent.destId === 'land_prison_out' && state.warden.pants <= 0);
+        if (willDealHpDamage && actor.knives < 1) {
+          notifyPlayer(actor.id, 'SQ2 利刃对 0 裤目标扣血必须持有并消耗 1 把刀！', 'warn');
+          return;
+        }
 
         const dmg = Engine.calcStabDamage(actor);
-        if (intent.targetId === 'NPC_WARDEN' && intent.destId === 'land_prison_out') {
+        actor.steps -= 1;
+        if (willDealHpDamage) actor.knives -= 1;
+
+        movePlayerTo(actor, intent.destId, { carryIds: [], silent: true });
+        emitFx('nodePulse', { nodeId: intent.destId });
+
+        if (!isAttacking) {
+          addLog(`⚡ ${actor.name} 【SQ2 利刃】突进至【${getNode(intent.destId)?.name}】`, 'normal', { actorId: actor.id, locId: intent.destId, isMoveToLoc: true });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '利刃突进', target: `【${getNode(intent.destId)?.name}】`, result: '抵达目标点' });
+        } else if (intent.targetId === 'NPC_WARDEN' && intent.destId === 'land_prison_out') {
           if (state.warden.pants > 0) {
             const pLost = Math.min(state.warden.pants, hasSQ(actor, 'SQ1') ? 2 : 1);
             state.warden.pants = roundHalf(state.warden.pants - pLost);
-            addLog(`⚔ 利刃顺势斩掉典狱长 ${pLost} 裤！`, 'normal');
+            addLog(`⚔ ${actor.name} 利刃突进斩掉典狱长 ${pLost} 裤！`, 'normal', { actorId: actor.id });
+            emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '利刃突进', target: 'NPC 典狱长', result: `-${pLost}👖` });
           } else {
+            addLog(`⚔ ${actor.name} 耗1刀利刃突进斩击典狱长！`, 'kill', { actorId: actor.id });
             Engine.damageWarden(actor, dmg);
+            emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '利刃突进(耗1刀)', target: 'NPC 典狱长', result: `-${dmg}❤️`, highlight: true });
           }
         } else if (target) {
           Engine.tryPiggyStealKnife(actor, target);
           if (target.pants > 0) {
             const lost = applyPantsLoss(target, hasSQ(actor, 'SQ1') ? 2 : 1, '利刃突进');
-            addLog(`⚔ 利刃突进划破 ${target.name} 的裤子（-${lost}👖）！`, 'kill');
-            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '利刃突进', target: target.name, result: `-${lost}👖`, mood: 'p5r' });
+            addLog(`⚔ ${actor.name} 利刃突进至【${getNode(intent.destId)?.name}】划破 ${target.name} 裤子 (-${lost}👖)`, 'kill', { actorId: actor.id, targetIds: [target.id], locId: intent.destId, isMoveToLoc: true });
+            emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '利刃突进', target: target.name, result: `-${lost}👖`, highlight: true });
           } else {
             const res = applyHpDamage(target, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 利刃突进斩杀` });
-            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '利刃突进绝杀', target: target.name, result: res.dodged ? 'MISS!' : res.killed ? '瞬杀！' : `-${dmg}❤️`, mood: 'p5r' });
+            addLog(`⚔ ${actor.name} 耗1刀利刃突进绝杀 ${target.name} (${res.dodged ? 'MISS' : res.blocked ? '护盾' : `-${dmg}❤️`})`, 'kill', { actorId: actor.id, targetIds: [target.id], locId: intent.destId, isMoveToLoc: true });
+            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '利刃突进绝杀', target: target.name, result: res.dodged ? 'MISS! (耗1刀)' : res.blocked ? '护盾抵消' : res.killed ? '瞬杀！' : `-${dmg}❤️`, mood: 'p5r', highlight: true });
             if (res.killed) Engine.maybeTriggerNinjaChain(actor);
           }
         }
@@ -2136,6 +2447,7 @@
         if (actor.steps < 1 || !hasSQ(actor, 'SQ5')) return;
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id || target.knives <= 0) return;
+        if (checkFogRemoteBlock(target.location, 'SQ5 吸铁石')) return;
         if (actor.location !== target.location && (isBarrierActive(actor.location) || isBarrierActive(target.location))) {
           notifyPlayer(actor.id, '结界内外隔绝，吸铁石无法穿透！', 'warn');
           return;
@@ -2144,10 +2456,11 @@
         actor.steps -= 1;
         target.knives -= 1;
         actor.knives += 1;
-        addLog(`🧲 ${actor.name} 用【SQ5 吸铁石】隔空吸走 ${target.name} 1把刀 (+1🔪)`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '吸铁石缴械', target: target.name, result: '远程夺刀 +1🔪' });
+        addLog(`🧲 ${actor.name} 用【SQ5 吸铁石】隔空吸走 ${target.name} 1把刀 (+1🔪)`, 'skill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '吸铁石缴械', target: target.name, result: '夺刀 +1🔪' });
         emitFx('float', { nodeId: target.location, text: '-1🔪 被吸走!', kind: 'pants' });
         emitFx('float', { nodeId: actor.location, text: '+1🔪', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: target.location });
         emitFx('sfx', { name: 'knife' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2161,6 +2474,7 @@
         }
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id || target.location === actor.location) return;
+        if (checkFogRemoteBlock(target.location, 'SQ6 钩爪')) return;
         if (target.location === 'land_prison_in' || isBarrierActive(target.location) || target.parasiteHostId) {
           notifyPlayer(actor.id, '目标在狱内、结界内或寄生中，无法钩抓！', 'warn');
           return;
@@ -2168,8 +2482,8 @@
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         movePlayerTo(target, actor.location, { carryIds: [], silent: true });
-        addLog(`🪝 ${actor.name} 用【SQ6 钩爪】将 ${target.name} 跨层强拉至【${curNode.name}】`, 'kill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '钩爪强拉', target: target.name, result: `拖入【${curNode.name}】`, mood: 'p5r' });
+        addLog(`🪝 ${actor.name} 用【SQ6 钩爪】将 ${target.name} 跨层强拉至【${curNode.name}】`, 'kill', { actorId: actor.id, targetIds: [target.id], locId: actor.location });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '钩爪强拉', target: target.name, result: `拖入【${curNode.name}】`, mood: 'p5r', highlight: true });
         emitFx('ripple', { nodeId: actor.location, color: '#ffe600', rings: 2 });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
@@ -2178,22 +2492,23 @@
 
       if (act === 'breathe') {
         if (actor.steps < 1 || !curNode || curNode.layer === 'land') return;
-        if (!hasEffectiveOxygenTank(actor) && !(curNode.layer === 'ocean' && hasEffectiveFrogMask(actor))) {
+        if (!hasEffectiveOxygenTank(actor) && !(curNode.layer === 'ocean' && isOceanOxygenImmune(actor))) {
           notifyPlayer(actor.id, '氧气瓶已损坏或被抢，无法在海空呼吸！', 'danger');
           return;
         }
         actor.steps -= 1;
         actor.oxygenTurns = 0;
         actor.breathedThisTurn = true;
-        // 寄生者共享宿主呼吸
         state.players.forEach((p) => {
           if (p.status === 'alive' && p.parasiteHostId === actor.id) {
             p.oxygenTurns = 0;
             p.breathedThisTurn = true;
           }
         });
-        addLog(`💨 ${actor.name} 呼吸重置`, 'muted');
+        addLog(`💨 ${actor.name} 呼吸重置`, 'muted', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '呼吸换气', target: `【${curNode.name}】`, result: '缺氧计数清零' });
         emitFx('float', { nodeId: actor.location, text: '呼吸重置!', kind: 'heal' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2208,8 +2523,10 @@
         state.artifacts[sqId].ownerId = actor.id;
         state.artifacts[sqId].droppedAt = null;
         if (sqId === 'SQ3') state.artifacts.SQ3.instanceId += 1;
-        addLog(`✨ ${actor.name} 拾取了掉落的龙宫神器【${ARTIFACTS[sqId].name}】！`, 'system');
+        addLog(`✨ ${actor.name} 拾取了掉落的龙宫神器【${ARTIFACTS[sqId].name}】！`, 'system', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '拾取神器', target: ARTIFACTS[sqId].name, result: ARTIFACTS[sqId].shortDesc, highlight: true });
         emitFx('float', { nodeId: actor.location, text: `获得 ${ARTIFACTS[sqId].short}!`, kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'skill' });
         updateBountyStatus(actor);
         Engine.finishCurrentActorIfDone(actor);
@@ -2221,11 +2538,14 @@
         const paras = state.players.filter((p) => p.status === 'alive' && p.parasiteHostId === actor.id);
         if (paras.length === 0) return;
         actor.steps -= 1;
+        const selfLost = applyPantsLoss(actor, 0.5, '甩开寄生');
         paras.forEach((p) => {
           p.parasiteHostId = null;
-          addLog(`💨 ${actor.name} 扒裤甩开了寄生者 ${p.name}！`, 'skill');
+          addLog(`💨 ${actor.name} 扒裤甩开了寄生者 ${p.name}（宿主自身 -${selfLost}👖）！`, 'skill', { actorId: actor.id, targetIds: [p.id] });
           emitFx('float', { nodeId: actor.location, text: '甩开寄生!', kind: 'skill' });
         });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '甩开寄生', result: `自身 -${selfLost}👖` });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2239,8 +2559,10 @@
         if (mode === 'stab' && actor.knives < 1) { notifyPlayer(actor.id, '预判「咔」需要持刀！', 'warn'); return; }
         actor.steps -= 1;
         raider.stealth.predictions.push({ predictorId: actor.id, loc: actor.location, mode });
-        addLog(`🎯 ${actor.name} 在【${curNode?.name}】对隐身突袭者 ${raider.name} 宣告了预判${mode === 'stab' ? '斩击' : '扒裤'}！`, 'skill');
+        addLog(`🎯 ${actor.name} 在【${curNode?.name}】对隐身突袭者 ${raider.name} 宣告了预判${mode === 'stab' ? '斩击' : '扒裤'}！`, 'skill', { actorId: actor.id, targetIds: [raider.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '预判锁定', target: raider.name, result: `【${curNode?.name}】${mode === 'stab' ? '预判斩击' : '预判扒裤'}` });
         emitFx('float', { nodeId: actor.location, text: '🎯 预判锁定', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2250,7 +2572,8 @@
         if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法逮捕入狱！', 'warn'); return; }
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id || target.location === 'land_prison_in') return;
-        if (isBarrierActive(target.location) || isBarrierActive(actor.location)) { notifyPlayer(actor.id, '结界隔绝，无法逮捕！', 'warn'); return; }
+        if (checkFogRemoteBlock(target.location, '警局远程逮捕')) return;
+        if (actor.location !== target.location && (isBarrierActive(target.location) || isBarrierActive(actor.location))) { notifyPlayer(actor.id, '结界隔绝，无法逮捕！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         Engine.startArrestBo3(actor, target, '警局远程逮捕');
@@ -2264,8 +2587,10 @@
         actor.steps -= 1;
         const corpse = holder.corpses.shift();
         actor.hp = roundHalf(actor.hp + 0.5);
-        addLog(`🚑 ${actor.name} 在警察局搬运了 ${corpse.name} 的尸体，回复 +0.5 命！`, 'normal');
+        addLog(`🚑 ${actor.name} 在警察局搬运了 ${corpse.name} 的尸体，回复 +0.5 命！`, 'normal', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '警局搬尸', target: corpse.name, result: '+0.5❤️' });
         emitFx('float', { nodeId: actor.location, text: '+0.5❤️', kind: 'heal' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2275,6 +2600,7 @@
         if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法自首入狱！', 'warn'); return; }
         actor.steps -= 1;
         sendPlayerToJail(actor, '主动自首');
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '自首入狱', target: '【监狱内】', result: '主动收押' });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2287,8 +2613,10 @@
         actor.maxPants = 0;
         actor.hp = 0.5;
         actor.oxygenTurns = 0;
-        addLog(`🐸 ${actor.name} 戴上青蛙面罩！获得永久水下呼吸，代价：裤上限永久 0，HP 变为 0.5！`, 'skill');
+        addLog(`🐸 ${actor.name} 戴上青蛙面罩！获得永久水下呼吸，代价：裤上限永久 0，HP 变为 0.5！`, 'skill', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '戴青蛙面罩', result: '永久水下呼吸 (0裤 / 0.5❤️)' });
         emitFx('float', { nodeId: actor.location, text: '🐸 青蛙面罩', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2298,13 +2626,26 @@
         actor.steps -= 1;
         if (Math.random() < 0.25) {
           actor.maxPants = 10;
-          addLog(`🏛 奇迹降临！${actor.name} 在遗迹挖出古代神裤，裤子上限暴增至 10！`, 'system');
+          addLog(`🏛 奇迹降临！${actor.name} 在遗迹挖出古代神裤，裤子上限暴增至 10！`, 'system', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '遗迹挖掘', result: '大奇迹！裤上限 → 10', highlight: true });
           emitFx('float', { nodeId: actor.location, text: '裤上限→10!', kind: 'heal' });
           emitFx('sfx', { name: 'rps_win' });
+        } else if (actor.maxPants < 4) {
+          const before = actor.maxPants;
+          actor.maxPants = Math.min(4, roundHalf(actor.maxPants + 0.5));
+          const gain = roundHalf(actor.maxPants - before);
+          addLog(`⛏ ${actor.name} 【遗迹】挖掘保底：裤子上限永久 +${gain}👖（当前上限 ${actor.maxPants}）`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '遗迹挖掘', result: `保底 +${gain}👖 上限 (→${actor.maxPants})` });
+          emitFx('float', { nodeId: actor.location, text: `保底上限+${gain}👖`, kind: 'heal' });
         } else {
-          addLog(`⛏ ${actor.name} 【遗迹】挖掘落空`, 'muted');
-          emitFx('float', { nodeId: actor.location, text: '挖掘落空', kind: 'info' });
+          const before = actor.pants;
+          actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + 0.5));
+          const gain = roundHalf(actor.pants - before);
+          addLog(`⛏ ${actor.name} 【遗迹】挖掘保底：当前裤子 +${gain}👖 (${actor.pants}/${actor.maxPants})`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '遗迹挖掘', result: `保底 +${gain}👖` });
+          emitFx('float', { nodeId: actor.location, text: `保底+${gain}👖`, kind: 'heal' });
         }
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2320,14 +2661,16 @@
         if (art.progress >= meta.stepsNeed) {
           art.ownerId = actor.id;
           if (sqId === 'SQ3') art.instanceId += 1;
-          addLog(`👑 ${actor.name} 锻成【${meta.name}】`, 'system');
-          emitFx('banner', { kicker: 'ARTIFACT FORGED // 龙宫神器出世', title: `${actor.name} 获得 ${meta.name}`, sub: meta.desc, mood: 'p5r', durationMs: 2150 });
+          addLog(`👑 ${actor.name} 锻成【${meta.name}】`, 'system', { actorId: actor.id });
+          emitFx('banner', { kicker: 'ARTIFACT FORGED // 龙宫神器出世', title: `${actor.name} 获得 ${meta.name}`, sub: meta.desc, mood: 'p5r', durationMs: 2400 });
           emitFx('sfx', { name: 'skill' });
           updateBountyStatus(actor);
         } else {
-          addLog(`🔱 ${actor.name} 锻造【${meta.short}】${art.progress}/${meta.stepsNeed}`, 'normal');
+          addLog(`🔱 ${actor.name} 锻造【${meta.short}】${art.progress}/${meta.stepsNeed}`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '锻造神器', target: meta.name, result: `进度 ${art.progress}/${meta.stepsNeed}` });
           emitFx('float', { nodeId: actor.location, text: `${meta.short} ${art.progress}/${meta.stepsNeed}`, kind: 'skill' });
         }
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2336,15 +2679,18 @@
         if (actor.steps < 1 || curNode?.kind !== 'wish') return;
         actor.steps -= 1;
         actor.wishSteps += 1;
-        if (actor.wishSteps >= 3) {
+        if (actor.wishSteps >= 2) {
           actor.wishSteps = 0;
           state.pendingAction = { type: 'wish_pick', actorId: actor.id };
-          addLog(`🌠 ${actor.name} 集齐 3 步许愿，正在向许愿池许下终极愿望！`, 'system');
+          addLog(`🌠 ${actor.name} 集齐 2 步许愿，正在向许愿池许下神迹！`, 'system', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '许愿池达成', result: '正在选择神迹...', highlight: true });
           emitFx('sfx', { name: 'skill' });
         } else {
-          addLog(`✨ ${actor.name} 向许愿池投币祈祷（个人进度 ${actor.wishSteps}/3）`, 'normal');
-          emitFx('float', { nodeId: actor.location, text: `许愿 ${actor.wishSteps}/3`, kind: 'skill' });
+          addLog(`✨ ${actor.name} 向许愿池投币祈祷（个人进度 ${actor.wishSteps}/2）`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '许愿祈祷', result: `进度 ${actor.wishSteps}/2` });
+          emitFx('float', { nodeId: actor.location, text: `许愿 ${actor.wishSteps}/2`, kind: 'skill' });
         }
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2355,52 +2701,72 @@
         if (!['bloodmoon', 'fog', 'storm'].includes(w)) return;
         actor.steps -= 1;
         state.nextWeather = w;
-        addLog(`🔭 ${actor.name} 在天象台改写星轨：下回合天象锁定为【${WEATHERS[w].name}】！`, 'system');
+        state.nextWeatherOwnerId = actor.id;
+        addLog(`🔭 ${actor.name} 在天象台改写星轨：下回合天象锁定为【${WEATHERS[w].name}】（主宰特权生效）！`, 'system', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '改写天象', target: `【${WEATHERS[w].name}】`, result: '下回合独享主场特权', highlight: true });
         emitFx('float', { nodeId: actor.location, text: `下回合:${WEATHERS[w].name}`, kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
       if (act === 'blackmarket_draw') {
-        if (actor.steps < 1 || curNode?.kind !== 'blackmarket') return;
-        actor.steps -= 1;
+        if (curNode?.kind !== 'blackmarket') return;
+        const isFreeNormal = actor.roleId === 'normal' && actor.blackMarketFreeTurn !== state.turn;
+        if (!isFreeNormal && actor.steps < 1) return;
+        if (isFreeNormal) actor.blackMarketFreeTurn = state.turn;
+        else actor.steps -= 1;
+
         state.pendingAction = {
           type: 'blackmarket',
           actorId: actor.id,
           contracts: Engine.rollBlackMarketContracts(),
           canFreeReroll: actor.roleId === 'normal' && actor.blackMarketRerollTurn !== state.turn
         };
-        addLog(`🕶 ${actor.name} 踏入黑市，掀开了 3 份恶魔契约...`, 'skill');
+        addLog(`🕶 ${actor.name} ${isFreeNormal ? '（0步免费）' : ''}踏入黑市，掀开了 3 份恶魔契约...`, 'skill', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '黑市抽契约', result: isFreeNormal ? '普通人 0 步白嫖' : '8 选 3 抉择中' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'blackmarket' });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
       if (act === 'use_skill') {
-        Engine.executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock);
+        Engine.executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock, null, checkFogRemoteBlock);
       }
     },
 
-    executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock, forcedRoleId = null) {
-      // 破体而出快速通道（同时兼容寄生者本体与盗版附身的镜像师）
+    executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock, forcedRoleId = null, checkFogRemoteBlock = null) {
+      const fogCheck = checkFogRemoteBlock || ((locId, label) => {
+        if (isFogBlockedFor(actor) && locId && locId !== actor.location) {
+          notifyPlayer(actor.id, `迷雾天象遮蔽视野，无法跨地点远程使用【${label}】！`, 'warn');
+          return true;
+        }
+        return false;
+      });
+
+      // 破体而出：v2.4 改为 0 步免费！破体「咔」额外 +0.5 伤且仍消耗 1 把刀
       if (actor.parasiteHostId && intent.burstMode) {
-        if (actor.steps < 1) return;
         const host = getPlayer(actor.parasiteHostId);
-        actor.parasiteHostId = null;
-        actor.steps -= 1;
-        if (host && host.status === 'alive') {
-          if (intent.burstMode === 'stab' && actor.knives >= 1 && host.pants <= 0) {
-            const dmg = Engine.calcStabDamage(actor);
-            const res = applyHpDamage(host, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 破体斩杀` });
-            addLog(`💥 ${actor.name} 破体而出！免费「咔」了宿主 ${host.name}（-${dmg}❤️）！`, 'kill');
-            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '破体绝杀', target: host.name, result: res.killed ? '宿主爆体阵亡！' : `-${dmg}❤️`, mood: 'p5r' });
-          } else {
+        if (intent.burstMode === 'stab') {
+          if (actor.knives < 1) { notifyPlayer(actor.id, '破体「咔」需要持有并消耗 1 把刀！', 'warn'); return; }
+          if (!host || host.status !== 'alive' || host.pants > 0) { notifyPlayer(actor.id, '宿主仍有裤子，无法直接破体「咔」！', 'warn'); return; }
+          const dmg = Engine.calcStabDamage(actor, { parasiteBurstBonus: true });
+          actor.parasiteHostId = null;
+          actor.knives -= 1;
+          const res = applyHpDamage(host, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 破体斩杀` });
+          addLog(`💥 ${actor.name} 0步破体而出！耗1刀免费「咔」宿主 ${host.name}（-${dmg}❤️）！`, 'kill', { actorId: actor.id, targetIds: [host.id] });
+          emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '破体绝杀(0步)', target: host.name, result: res.dodged ? 'MISS!' : res.blocked ? '护盾抵消' : res.killed ? '宿主爆体阵亡！' : `-${dmg}❤️`, mood: 'p5r', highlight: true });
+        } else {
+          actor.parasiteHostId = null;
+          if (host && host.status === 'alive') {
             const lost = applyPantsLoss(host, hasSQ(actor, 'SQ1') ? 2 : 1, '破体扒裤');
-            addLog(`💥 ${actor.name} 破体而出！免费扒掉宿主 ${host.name} ${lost} 裤！`, 'skill');
-            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '破体奇袭', target: host.name, result: `免费扒 -${lost}👖`, mood: 'p5r' });
+            addLog(`💥 ${actor.name} 0步破体而出！免费扒掉宿主 ${host.name} ${lost} 裤！`, 'skill', { actorId: actor.id, targetIds: [host.id] });
+            emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '破体奇袭(0步)', target: host.name, result: `免费扒 -${lost}👖`, mood: 'p5r', highlight: true });
           }
         }
+        emitFx('nodePulse', { nodeId: actor.location });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2420,13 +2786,15 @@
           actor.activeCharges -= 1;
           actor.knives += 1;
           actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + 0.5));
-          addLog(`🪞 镜像师 ${actor.name} 发动【盗版】（场上尚无先例），转化为 +1 刀 +0.5 裤！`, 'skill');
+          addLog(`🪞 镜像师 ${actor.name} 发动【盗版】（场上尚无先例），转化为 +1 刀 +0.5 裤！`, 'skill', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '盗版转化', result: '+1🔪 +0.5👖' });
           emitFx('float', { nodeId: actor.location, text: '+1🔪 +0.5👖', kind: 'skill' });
+          emitFx('nodePulse', { nodeId: actor.location });
           emitFx('sfx', { name: 'skill' });
           Engine.finishCurrentActorIfDone(actor);
           return;
         }
-        Engine.executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock, state.lastActiveSkill.roleId);
+        Engine.executeRoleSkill(actor, intent, orderTag, checkPigFaceBlock, state.lastActiveSkill.roleId, fogCheck);
         return;
       }
 
@@ -2444,8 +2812,8 @@
         actor.activeCharges -= 1;
         actor.stealth = { active: true, originLoc: actor.location, turnUsed: state.turn, predictions: [] };
         recordLastActive('raider', '量子隐身');
-        addLog(`👤 ${actor.name} 发动【量子隐身】消失在观测之外！下回合全员走完后揭晓暗步！`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '量子隐身', result: '行踪加密 · 等待下回合揭晓', mood: 'p5r' });
+        addLog(`👤 ${actor.name} 发动【量子隐身】消失在观测之外！下回合全员走完后揭晓暗步！`, 'skill', { actorId: actor.id });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '量子隐身', result: '行踪加密 · 等待下回合揭晓', mood: 'p5r', highlight: true });
         emitFx('sfx', { name: 'skill' });
         actor.steps = 0;
         Engine.finishCurrentActorIfDone(actor);
@@ -2465,10 +2833,12 @@
         if (isWholeNode) {
           const srcNode = getNode(intent.srcNodeId);
           if (!srcNode || srcNode.layer !== destNode.layer || srcNode.id === destNode.id || isBarrierActive(srcNode.id)) return;
+          if (fogCheck(srcNode.id, '乱流风暴')) return;
           victims = getAlivePlayersAt(srcNode.id);
         } else {
           const target = getPlayer(intent.targetId);
           if (!isVisibleAlive(target)) return;
+          if (fogCheck(target.location, '乱流风暴')) return;
           const tNode = getNode(target.location);
           if (!tNode || tNode.layer !== destNode.layer || tNode.id === destNode.id || isBarrierActive(tNode.id)) return;
           if (checkPigFaceBlock(target)) return;
@@ -2479,13 +2849,15 @@
         actor.activeCharges -= 1;
         recordLastActive('storm', '乱流风暴');
         const blown = [];
+        const blownIds = [];
         victims.forEach((v) => {
           if (isWholeNode && needsPinchPigFace(actor, v)) return;
           movePlayerTo(v, destNode.id, { carryIds: [], silent: true });
           blown.push(v.name);
+          blownIds.push(v.id);
         });
-        addLog(`🌪 ${actor.name} 发动【乱流风暴】将 ${blown.join('、') || '无人'} 吹至【${destNode.name}】！`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '乱流风暴', target: destNode.name, result: `吹飞 ${blown.join('、') || '空地'}` });
+        addLog(`🌪 ${actor.name} 发动【乱流风暴】将 ${blown.join('、') || '无人'} 吹至【${destNode.name}】！`, 'skill', { actorId: actor.id, targetIds: blownIds, locId: destNode.id });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '乱流风暴', target: destNode.name, result: `吹飞 ${blown.join('、') || '空地'}`, highlight: true });
         emitFx('ripple', { nodeId: destNode.id, color: '#00d4ff', rings: 3 });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
@@ -2496,6 +2868,7 @@
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id) return;
+        if (fogCheck(target.location, '电击麻痹')) return;
         if (actor.location !== target.location && (isBarrierActive(target.location) || isBarrierActive(actor.location))) {
           notifyPlayer(actor.id, '结界内外隔绝，电击无法穿透！', 'warn');
           return;
@@ -2506,10 +2879,10 @@
         actor.activeCharges -= 1;
         target.paralyzedNextTurn = true;
         recordLastActive('chili', '电击麻痹');
-        addLog(`⚡ ${actor.name} 电击 ${target.name} → 下回麻痹`, 'skill');
+        addLog(`⚡ ${actor.name} 电击 ${target.name} → 下回麻痹`, 'skill', { actorId: actor.id, targetIds: [target.id] });
         emitFx('electricArc', { fromNodeId: actor.location, toNodeId: target.location, durationMs: 520 });
         emitFx('float', { nodeId: target.location, text: '⚡ 下回合麻痹!', kind: 'skill' });
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '电击麻痹', target: target.name, result: '下回合强制无法行动', mood: 'p5r' });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '电击麻痹', target: target.name, result: '下回合强制无法行动', mood: 'p5r', highlight: true });
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -2519,6 +2892,7 @@
         if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法抓捕入狱！', 'warn'); return; }
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id || target.location === 'land_prison_in') return;
+        if (fogCheck(target.location, '远程抓捕')) return;
         if (isBarrierActive(target.location)) { notifyPlayer(actor.id, '目标处于结界保护中，无法抓捕！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
 
@@ -2542,8 +2916,8 @@
         actor.activeCharges -= 1;
         recordLastActive('aquaman', '深海潜行');
         movePlayerTo(actor, destNode.id, { carryIds: [], silent: true });
-        addLog(`🌊 ${actor.name} 发动【深海潜行】潜入【${destNode.name}】（余${actor.activeCharges}次）`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '深海潜行', target: destNode.name, result: `直潜海洋（剩${actor.activeCharges}次）` });
+        addLog(`🌊 ${actor.name} 发动【深海潜行】潜入【${destNode.name}】（余${actor.activeCharges}次）`, 'skill', { actorId: actor.id, locId: destNode.id, isMoveToLoc: true });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '深海潜行', target: `【${destNode.name}】`, result: `直潜海洋（剩${actor.activeCharges}次）`, highlight: true });
         emitFx('ripple', { nodeId: destNode.id, color: '#00d4ff', rings: 2 });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
@@ -2558,8 +2932,10 @@
         actor.activeCharges -= 1;
         actor.piggyStealArmed = true;
         recordLastActive('piggy', '顺手牵刀');
-        addLog(`🐷 ${actor.name} 蓄势【顺手牵刀】：下次攻击目标时将免费顺走对方 1 把刀！`, 'skill');
+        addLog(`🐷 ${actor.name} 蓄势【顺手牵刀】：下次攻击目标时将免费顺走对方 1 把刀！`, 'skill', { actorId: actor.id });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '顺手牵刀', result: '下次攻击免费抢 1 刀' });
         emitFx('float', { nodeId: actor.location, text: '顺手牵刀就绪!', kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'knife' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2582,6 +2958,7 @@
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const target = getPlayer(intent.targetId);
         if (!isVisibleAlive(target) || target.id === actor.id) return;
+        if (fogCheck(target.location, '提线木偶')) return;
         if (actor.location !== target.location && (isBarrierActive(target.location) || isBarrierActive(actor.location))) {
           notifyPlayer(actor.id, '结界内外隔绝，提线木偶无法操控！', 'warn');
           return;
@@ -2599,7 +2976,7 @@
           movePlayerTo(target, intent.destId, { carryIds: [], silent: true });
           resultText = `被迫移动至【${getNode(intent.destId)?.name}】`;
         } else if (cmd === 'wear_pants') {
-          if (state.weather === 'storm' && tNode.layer === 'land') { notifyPlayer(actor.id, '雷暴陆地禁穿裤', 'warn'); return; }
+          if (state.weather === 'storm' && tNode.layer === 'land' && !isStormImmune(target)) { notifyPlayer(actor.id, '雷暴陆地禁穿裤', 'warn'); return; }
           target.pants = Math.min(target.maxPants, roundHalf(target.pants + 1));
           resultText = `被迫穿裤（${target.pants}/${target.maxPants}）`;
         } else if (cmd === 'draw_knife') {
@@ -2618,8 +2995,9 @@
         actor.steps -= 1;
         actor.activeCharges -= 1;
         recordLastActive('puppeteer', '提线木偶');
-        addLog(`🧵 ${actor.name} 发动【提线木偶】强控 ${target.name}：${resultText}！`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '提线木偶', target: target.name, result: resultText, mood: 'p5r' });
+        addLog(`🧵 ${actor.name} 发动【提线木偶】强控 ${target.name}：${resultText}！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '提线木偶', target: target.name, result: resultText, mood: 'p5r', highlight: true });
+        emitFx('nodePulse', { nodeId: target.location });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2636,8 +3014,10 @@
         actor.activeCharges -= 1;
         actor.parasiteHostId = host.id;
         recordLastActive('parasite', '寄生');
-        addLog(`🦠 ${actor.name} 发动【寄生】钻入 ${host.name} 体内，免费随行并共享氧气/面罩！`, 'skill');
+        addLog(`🦠 ${actor.name} 发动【寄生】钻入 ${host.name} 体内，免费随行并共享氧气/面罩！`, 'skill', { actorId: actor.id, targetIds: [host.id] });
+        emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '寄生附身', target: host.name, result: '共享随行与氧气' });
         emitFx('float', { nodeId: actor.location, text: `寄生→${host.name}`, kind: 'skill' });
+        emitFx('nodePulse', { nodeId: actor.location });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2652,8 +3032,8 @@
         actor.activeCharges -= 1;
         node.barrierUntilTurn = state.turn + 1;
         recordLastActive('barrier', '绝对领域');
-        addLog(`🔮 ${actor.name} 展开【绝对领域】彻底封锁【${node.name}】至第 ${state.turn + 1} 回合末！`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '绝对领域', target: node.name, result: `内外彻底隔绝至 T${state.turn + 1}`, mood: 'p5r' });
+        addLog(`🔮 ${actor.name} 展开【绝对领域】彻底封锁【${node.name}】至第 ${state.turn + 1} 回合末！`, 'skill', { actorId: actor.id, locId: node.id });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '绝对领域', target: node.name, result: `内外彻底隔绝至 T${state.turn + 1}`, mood: 'p5r', highlight: true });
         emitFx('ripple', { nodeId: node.id, color: '#b666ff', rings: 3 });
         emitFx('sfx', { name: 'skill' });
         Engine.finishCurrentActorIfDone(actor);
@@ -2665,14 +3045,15 @@
         const a = getPlayer(intent.targetAId);
         const b = getPlayer(intent.targetBId);
         if (!isVisibleAlive(a) || !isVisibleAlive(b) || a.id === b.id) return;
+        if (fogCheck(a.location, '命运链接') || fogCheck(b.location, '命运链接')) return;
         if (checkPigFaceBlock(a) || checkPigFaceBlock(b)) return;
 
         actor.steps -= 1;
         actor.activeCharges -= 1;
         state.links.push({ id: uid('lnk'), aId: a.id, bId: b.id, expiresTurn: state.turn + 2 });
         recordLastActive('curser', '命运链接');
-        addLog(`🩸 ${actor.name} 施放【命运链接】绑定 ${a.name} ⇄ ${b.name}（持续 2 回合，扣裤扣血同步承受）！`, 'skill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '命运链接', target: `${a.name} ⇄ ${b.name}`, result: '扣裤扣血同步共振 2 回合', mood: 'p5r' });
+        addLog(`🩸 ${actor.name} 施放【命运链接】绑定 ${a.name} ⇄ ${b.name}（持续 2 回合，扣裤扣血同步承受）！`, 'skill', { actorId: actor.id, targetIds: [a.id, b.id] });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '命运链接', target: `${a.name} ⇄ ${b.name}`, result: '扣裤扣血同步共振 2 回合', mood: 'p5r', highlight: true });
         emitFx('sfx', { name: 'blackmarket' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2680,6 +3061,22 @@
 
       if (skillRole === 'undertaker') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
+        if (intent.corpseNodeId) {
+          const cNode = getNode(intent.corpseNodeId);
+          if (!cNode || cNode.corpses.length === 0) { notifyPlayer(actor.id, '该地点暂无可销毁的尸体！', 'warn'); return; }
+          actor.steps -= 1;
+          actor.activeCharges -= 1;
+          const corpse = cNode.corpses.shift();
+          actor.hp = roundHalf(actor.hp + 0.5);
+          recordLastActive('undertaker', '封魂');
+          addLog(`⚰ ${actor.name} 发动【封魂·烧尸】远程销毁【${cNode.name}】的 ${corpse.name} 尸体，回复 +0.5❤️！`, 'skill', { actorId: actor.id });
+          emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '封魂·烧尸', target: corpse.name, result: '销毁尸体 · 自身 +0.5❤️', highlight: true });
+          emitFx('float', { nodeId: actor.location, text: '+0.5❤️', kind: 'heal' });
+          emitFx('nodePulse', { nodeId: cNode.id });
+          emitFx('sfx', { name: 'blackmarket' });
+          Engine.finishCurrentActorIfDone(actor);
+          return;
+        }
         const target = getPlayer(intent.targetId);
         if (!target || target.status !== 'pending_revive') return;
 
@@ -2689,8 +3086,8 @@
         target.status = 'dead_final';
         actor.hp = roundHalf(actor.hp + 0.5);
         recordLastActive('undertaker', '封魂');
-        addLog(`⚰ ${actor.name} 发动【封魂】彻底捏碎 ${target.name} 的地府复活资格，并回复 +0.5 命！`, 'kill');
-        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '封魂灭魄', target: target.name, result: '复活资格销毁 · 自身 +0.5❤️', mood: 'p5r' });
+        addLog(`⚰ ${actor.name} 发动【封魂】彻底捏碎 ${target.name} 的地府复活资格，并回复 +0.5 命！`, 'kill', { actorId: actor.id, targetIds: [target.id] });
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '封魂灭魄', target: target.name, result: '复活资格销毁 · 自身 +0.5❤️', mood: 'p5r', highlight: true });
         emitFx('float', { nodeId: actor.location, text: '+0.5❤️', kind: 'heal' });
         emitFx('sfx', { name: 'blackmarket' });
         Engine.finishCurrentActorIfDone(actor);
@@ -2702,7 +3099,7 @@
         actor.piggyStealArmed = false;
         target.knives -= 1;
         actor.knives += 1;
-        addLog(`🐷 ${actor.name} 触发【顺手牵刀】免费抢走 ${target.name} 1 把刀！`, 'skill');
+        addLog(`🐷 ${actor.name} 触发【顺手牵刀】免费抢走 ${target.name} 1 把刀！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
         emitFx('float', { nodeId: actor.location, text: '顺手牵刀 +1🔪', kind: 'skill' });
       }
     },
@@ -2723,15 +3120,15 @@
         state.warden.respawnCount += 1;
         state.warden.hp = 1;
         state.warden.pants = 3;
-        addLog(`🔓 ${actor.name} 击杀典狱长！${freed.length ? `${freed.join('、')} 越狱` : '牢内无人'}`, 'system');
-        emitFx('banner', { kicker: 'JAILBREAK // 越狱成功', title: '典狱长倒下！', sub: freed.length ? `${freed.join('、')} 全部出狱` : '新任典狱长已就位', mood: 'p5r', durationMs: 2150 });
+        addLog(`🔓 ${actor.name} 击杀典狱长！${freed.length ? `${freed.join('、')} 越狱` : '牢内无人'}`, 'system', { actorId: actor.id });
+        emitFx('banner', { kicker: 'JAILBREAK // 越狱成功', title: '典狱长倒下！', sub: freed.length ? `${freed.join('、')} 全部出狱` : '新任典狱长已就位', mood: 'p5r', durationMs: 2400 });
         Engine.maybeTriggerNinjaChain(actor);
       }
     },
 
     maybeTriggerNinjaChain(actor) {
       if (!actor || actor.status !== 'alive' || actor.roleId !== 'ninja') return;
-      if (actor.activeCharges <= 0 || isHypoxic(actor)) return;
+      if (!actor.bladeReady || actor.activeCharges <= 0 || isHypoxic(actor)) return;
       if (Engine.getNinjaChainTargets(actor).length > 0) {
         state.pendingAction = { type: 'ninja_chain', actorId: actor.id };
       }
@@ -2755,7 +3152,8 @@
     startArrestBo3(initiator, target, label) {
       state.phase = 'sub_rps';
       state.subRps = { kind: 'arrest', label, aId: initiator.id, bId: target.id, aScore: 0, bScore: 0, targetWins: 2, round: 1, choices: {}, revealed: false };
-      addLog(`🚔 ${initiator.name} 对 ${target.name} 发起【${label}】三局两胜猜拳！`, 'skill');
+      addLog(`🚔 ${initiator.name} 对 ${target.name} 发起【${label}】三局两胜猜拳！`, 'skill', { actorId: initiator.id, targetIds: [target.id] });
+      emitFx('tacticalFeed', { actor: initiator.name, action: label, target: target.name, result: '三局两胜对决！', highlight: true });
       emitFx('sfx', { name: 'alarm' });
       syncMoodFromState();
       Net.broadcastState();
@@ -2842,7 +3240,8 @@
       if (pa.type === 'blackmarket') {
         if (intent.cancel) {
           state.pendingAction = null;
-          addLog(`🕶 ${actor.name} 放弃了本轮黑市契约。`, 'normal');
+          addLog(`🕶 ${actor.name} 放弃了本轮黑市契约。`, 'normal', { actorId: actor.id });
+          emitFx('tacticalFeed', { actor: actor.name, action: '黑市离场', result: '未签署契约' });
           Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
           return;
         }
@@ -2850,7 +3249,7 @@
           actor.blackMarketRerollTurn = state.turn;
           pa.canFreeReroll = false;
           pa.contracts = Engine.rollBlackMarketContracts();
-          addLog(`🔄 普通人 ${actor.name} 免费刷新了黑市恶魔契约！`, 'skill');
+          addLog(`🔄 普通人 ${actor.name} 免费刷新了黑市恶魔契约！`, 'skill', { actorId: actor.id });
           emitFx('sfx', { name: 'blackmarket' });
           Net.broadcastState();
           UI.renderAll();
@@ -2862,6 +3261,10 @@
         const target = intent.targetId ? getPlayer(intent.targetId) : null;
         if ((cid === 'bm_swap_pants' || cid === 'bm_bounty_strip') && (!isVisibleAlive(target) || target.id === actor.id)) {
           notifyPlayer(actor.id, '该契约需要指定 1 名存活目标', 'warn');
+          return;
+        }
+        if (target && isFogBlockedFor(actor) && target.location !== actor.location) {
+          notifyPlayer(actor.id, '迷雾天象遮蔽视野，无法跨地点远程签署该黑市契约！', 'warn');
           return;
         }
         if (target && needsPinchPigFace(actor, target)) {
@@ -2876,7 +3279,21 @@
 
       if (pa.type === 'wish_pick') {
         const w = intent.wishId;
-        if (w === 'revive') {
+        if (w === 'divine_reset') {
+          const role = ROLE_MAP[actor.roleId];
+          actor.hp = roundHalf(actor.hp + 1);
+          actor.pants = actor.maxPants;
+          let extra = '';
+          if (role.activeMax > 0) {
+            actor.activeCharges += 1;
+            extra = '+1主动技';
+          } else {
+            actor.shield += 1;
+            extra = '+1层护盾';
+          }
+          addLog(`🌠 许愿池【神赐重整】：${actor.name} +1❤️、裤子回满至 ${actor.maxPants}、${extra}！`, 'system', { actorId: actor.id });
+          emitFx('float', { nodeId: actor.location, text: `+1❤️ 回满裤 ${extra}`, kind: 'heal' });
+        } else if (w === 'revive') {
           const dead = getPlayer(intent.targetId);
           if (!dead || dead.status === 'alive') return;
           revivePlayerAtUnderworld(dead, { viaWish: true });
@@ -2889,29 +3306,38 @@
           const l2 = p2.location;
           movePlayerTo(p1, l2, { silent: true });
           movePlayerTo(p2, l1, { silent: true });
-          addLog(`🌠 许愿池【空间置换】：${p1.name} 与 ${p2.name} 互换了位置！`, 'system');
+          addLog(`🌠 许愿池【空间置换】：${p1.name} 与 ${p2.name} 互换了位置！`, 'system', { actorId: actor.id, targetIds: [p1.id, p2.id] });
         } else if (w === 'drain_oxy') {
+          const hitIds = [];
           state.players.forEach((p) => {
+            if (p.id === actor.id || p.status !== 'alive') return;
             const n = getNode(p.location);
-            if (p.status === 'alive' && n && n.layer !== 'land') {
-              p.oxygenTurns += 1;
-              emitFx('float', { nodeId: p.location, text: '氧额 -1!', kind: 'dmg' });
-            }
+            if (!n || n.layer === 'land') return;
+            if (n.layer === 'ocean' && isOceanOxygenImmune(p)) return;
+            p.oxygenTurns += 2;
+            hitIds.push(p.id);
+            emitFx('float', { nodeId: p.location, text: '缺氧 +2!', kind: 'dmg' });
           });
-          addLog('🌠 许愿池【抽干氧源】：所有海/空玩家呼吸额度 -1！', 'system');
+          addLog(`🌠 许愿池【抽干氧源】：除 ${actor.name} 外，所有海/空存活玩家缺氧计数 +2！`, 'system', { actorId: actor.id, targetIds: hitIds });
         } else if (w === 'jail') {
           const t = getPlayer(intent.targetId);
           if (!isVisibleAlive(t)) return;
           if (isBarrierActive(t.location)) { notifyPlayer(actor.id, '目标处于结界保护中，无法强送入狱！', 'warn'); return; }
           sendPlayerToJail(t, '遭许愿池天降法槌');
         } else if (w === 'disarm') {
-          state.players.forEach((p) => { p.knives = 0; });
-          addLog('🌠 许愿池【全图缴械】：全场所有玩家手中的刀全部清零！', 'system');
+          const hitIds = [];
+          state.players.forEach((p) => {
+            if (p.id !== actor.id && p.knives > 0) {
+              p.knives = 0;
+              hitIds.push(p.id);
+            }
+          });
+          addLog(`🌠 许愿池【全图缴械】：除 ${actor.name} 外，其余所有玩家手中的刀全部清零！`, 'system', { actorId: actor.id, targetIds: hitIds });
         } else {
           return;
         }
         state.pendingAction = null;
-        emitFx('banner', { kicker: 'WISH GRANTED // 许愿达成', title: `${actor.name} 改写了现实`, sub: WISH_OPTIONS.find((o) => o.id === w)?.name || '', mood: 'p5r', durationMs: 2150 });
+        emitFx('banner', { kicker: 'WISH GRANTED // 许愿达成', title: `${actor.name} 改写了现实`, sub: WISH_OPTIONS.find((o) => o.id === w)?.name || '', mood: 'p5r', durationMs: 2400 });
         Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
         return;
       }
@@ -2931,7 +3357,9 @@
         state.lastActiveSkill = { roleId: 'ninja', skillName: '瞬身连撞', casterId: actor.id };
         state.pendingAction = null;
         movePlayerTo(actor, chosen.nodeId, { silent: true });
-        addLog(`⚡ ${actor.name} 发动【瞬身连撞】突袭 ${chosen.name}！`, 'kill');
+        addLog(`⚡ ${actor.name} 发动【瞬身连撞】突袭 ${chosen.name}！`, 'kill', { actorId: actor.id, targetIds: chosen.isWarden ? [] : [chosen.id] });
+        emitFx('tacticalFeed', { actor: actor.name, action: '瞬身连撞', target: chosen.name, result: '1伤突袭', highlight: true });
+        emitFx('nodePulse', { nodeId: chosen.nodeId });
 
         if (chosen.isWarden) {
           if (state.warden.pants > 0) {
@@ -2951,18 +3379,19 @@
           }
         }
         Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
-        return;
       }
-
-
     },
 
     applyBlackMarketContract(actor, cid, target) {
       const role = ROLE_MAP[actor.roleId];
+      const cMeta = CONTRACTS.find((x) => x.id === cid);
+      emitFx('tacticalFeed', { actor: actor.name, action: '黑市签约', target: cMeta?.name || cid, result: target ? `目标: ${target.name}` : '恶魔契约生效', highlight: true });
+      emitFx('nodePulse', { nodeId: actor.location });
+
       switch (cid) {
         case 'bm_overcharge':
-          if (role.activeMax > 0) { actor.activeCharges += 1; addLog(`😈 黑市【过载充能】：${actor.name} 主动技 +1！`, 'skill'); }
-          else { actor.shield += 1; addLog(`😈 黑市【过载充能】：${actor.name} 获得 1 层黑市护盾！`, 'skill'); }
+          if (role.activeMax > 0) { actor.activeCharges += 1; addLog(`😈 黑市【过载充能】：${actor.name} 主动技 +1！`, 'skill', { actorId: actor.id }); }
+          else { actor.shield += 1; addLog(`😈 黑市【过载充能】：${actor.name} 获得 1 层黑市护盾！`, 'skill', { actorId: actor.id }); }
           if (actor.pants >= 1) applyPantsLoss(actor, 1, '过载代价');
           else applyHpDamage(actor, 0.5, null, { canDodge: false, ignoreShield: true, reason: '过载充能反噬' });
           break;
@@ -2971,7 +3400,7 @@
           if (role.activeMax > 0) actor.activeCharges = Math.max(actor.activeCharges, role.activeMax);
           else actor.knives += 2;
           actor.bomb = { turnsLeft: 2 };
-          addLog(`💣 黑市【人体炸弹】：${actor.name} 战力拉满，但身绑 2 回合定时炸弹！`, 'kill');
+          addLog(`💣 黑市【人体炸弹】：${actor.name} 战力拉满，但身绑 2 回合定时炸弹！`, 'kill', { actorId: actor.id });
           emitFx('float', { nodeId: actor.location, text: '💣 2回合自爆', kind: 'dmg' });
           break;
 
@@ -2985,13 +3414,13 @@
             if (art.progress >= ARTIFACTS[pick].stepsNeed) {
               art.ownerId = actor.id;
               if (pick === 'SQ3') art.instanceId += 1;
-              addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀，并直接完成了【${ARTIFACTS[pick].name}】！`, 'system');
+              addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀，并直接完成了【${ARTIFACTS[pick].name}】！`, 'system', { actorId: actor.id });
               updateBountyStatus(actor);
             } else {
-              addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀，并推进 ${ARTIFACTS[pick].short} +1 格（${art.progress}/${ARTIFACTS[pick].stepsNeed}）！`, 'skill');
+              addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀，并推进 ${ARTIFACTS[pick].short} +1 格（${art.progress}/${ARTIFACTS[pick].stepsNeed}）！`, 'skill', { actorId: actor.id });
             }
           } else {
-            addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀！`, 'skill');
+            addLog(`🩸 黑市【血肉献祭】：${actor.name} 献血 0.5 命换 +2 刀！`, 'skill', { actorId: actor.id });
           }
           applyHpDamage(actor, 0.5, null, { canDodge: false, ignoreShield: true, reason: '血肉献祭身亡' });
           break;
@@ -3000,14 +3429,14 @@
         case 'bm_elixir':
           actor.hp = roundHalf(actor.hp + 1);
           actor.pants = 0;
-          addLog(`💉 黑市【禁药续命】：${actor.name} +1 命，代价：裤子清零！`, 'skill');
+          addLog(`💉 黑市【禁药续命】：${actor.name} +1 命，代价：裤子清零！`, 'skill', { actorId: actor.id });
           emitFx('float', { nodeId: actor.location, text: '+1❤️ 裤清零', kind: 'heal' });
           break;
 
         case 'bm_overdraft':
           actor.steps += 1;
           actor.paralyzedNextTurn = true;
-          addLog(`⏳ 黑市【透支未来】：${actor.name} 本回合立刻 +1 步，下回合强制麻痹！`, 'skill');
+          addLog(`⏳ 黑市【透支未来】：${actor.name} 本回合立刻 +1 步，下回合强制麻痹！`, 'skill', { actorId: actor.id });
           emitFx('float', { nodeId: actor.location, text: '+1步 下回合麻痹', kind: 'skill' });
           break;
 
@@ -3017,7 +3446,7 @@
             actor.pants = Math.min(actor.maxPants, target.pants);
             target.pants = Math.min(target.maxPants, tmp);
             actor.knives = 0;
-            addLog(`👖 黑市【强制换裤】：${actor.name} 清空所有刀，与 ${target.name} 远程互换裤子！`, 'skill');
+            addLog(`👖 黑市【强制换裤】：${actor.name} 清空所有刀，与 ${target.name} 远程互换裤子！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
           }
           break;
 
@@ -3026,7 +3455,7 @@
             applyPantsLoss(target, 1, '黑市通缉');
             actor.pants = Math.max(0, roundHalf(actor.pants - 0.5));
             if (!state.nodes.land_police.collapsed && !isBarrierActive('land_police')) movePlayerTo(actor, 'land_police', { silent: true });
-            addLog(`🎯 黑市【黑市通缉】：${actor.name} 远程扒掉 ${target.name} 1 裤，被迫现身警察局且自身 -0.5 裤！`, 'skill');
+            addLog(`🎯 黑市【黑市通缉】：${actor.name} 远程扒掉 ${target.name} 1 裤，被迫现身警察局且自身 -0.5 裤！`, 'skill', { actorId: actor.id, targetIds: [target.id] });
           }
           break;
 
@@ -3038,43 +3467,28 @@
           if (oceans.length > 0) {
             const dest = oceans[Math.floor(Math.random() * oceans.length)];
             movePlayerTo(actor, dest.id, { silent: true });
-            addLog(`🌊 黑市【走私潜航】：${actor.name} 强化供氧并 +1 裤，被走私艇冲入【${dest.name}】！`, 'skill');
+            addLog(`🌊 黑市【走私潜航】：${actor.name} 强化供氧并 +1 裤，被走私艇冲入【${dest.name}】！`, 'skill', { actorId: actor.id, locId: dest.id, isMoveToLoc: true });
           }
           break;
         }
       }
     },
 
+    pickNextCollapseTarget() {
+      const candidates = Object.values(state.nodes).filter((n) => n.collapsible && !n.collapsed);
+      if (candidates.length === 0) return null;
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    },
+
     endTurnCleanup() {
       if (Engine.checkVictory()) return;
 
-      // 1. 天一坠落（被结界封锁时无法穿出结界）
-      state.players.forEach((p) => {
-        if (p.status !== 'alive' || p.parasiteHostId || p.location !== 'sky_one' || isBarrierActive('sky_one')) return;
-        const dropPool = Object.values(state.nodes).filter(
-          (n) => !n.collapsed && n.layer !== 'sky' && n.kind !== 'dock' && n.kind !== 'prison_in' && !isBarrierActive(n.id)
-        );
-        if (dropPool.length === 0) return;
-        const dest = dropPool[Math.floor(Math.random() * dropPool.length)];
-        movePlayerTo(p, dest.id, { silent: true });
-        if (dest.layer === 'land') {
-          addLog(`☄ ${p.name} 滞留天一失足坠落至【${dest.name}】，重摔 -2 命！`, 'kill');
-          applyHpDamage(p, 2, null, { canDodge: false, reason: '从天一高空坠落陆地摔死' });
-        } else {
-          p.oxygenTank = false;
-          addLog(`💦 ${p.name} 从天一坠入海洋【${dest.name}】无伤落水，但氧气瓶摔坏了！`, 'skill');
-          emitFx('float', { nodeId: dest.id, text: '落海 氧气瓶损坏!', kind: 'pants' });
-        }
-      });
-
-      if (Engine.checkVictory()) return;
-
-      // 2. 海空 5 回合阶梯缺氧
+      // 1. 海空 5 回合阶梯缺氧（海王在海洋、青蛙面罩在海洋永久免疫）
       state.players.forEach((p) => {
         if (p.status !== 'alive') return;
         const node = getNode(p.location);
         if (!node || node.layer === 'land') { p.oxygenTurns = 0; return; }
-        if (node.layer === 'ocean' && hasEffectiveFrogMask(p)) { p.oxygenTurns = 0; return; }
+        if (node.layer === 'ocean' && isOceanOxygenImmune(p)) { p.oxygenTurns = 0; return; }
         if (p.enteredNonLandTurn === state.turn || p.breathedThisTurn) return;
 
         p.oxygenTurns += 1;
@@ -3082,41 +3496,45 @@
           if (p.antiSuffocate > 0) {
             p.antiSuffocate -= 1;
             p.oxygenTurns = 0;
-            addLog(`🫧 ${p.name} 触发防窒息保险，逃过缺氧死劫！`, 'skill');
+            addLog(`🫧 ${p.name} 触发防窒息保险，逃过缺氧死劫！`, 'skill', { targetIds: [p.id] });
             emitFx('float', { nodeId: p.location, text: '保险防窒息!', kind: 'heal' });
           } else {
-            addLog(`🫧 ${p.name} 在【${node.name}】缺氧耗尽，窒息身亡！`, 'kill');
+            addLog(`🫧 ${p.name} 在【${node.name}】缺氧耗尽，窒息身亡！`, 'kill', { targetIds: [p.id] });
             handlePlayerDeath(p, null, '海空缺氧窒息身亡');
           }
         } else if (p.oxygenTurns >= state.config.oxygenMax - 2) {
-          addLog(`⚠ ${p.name} 缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}（攻减半/禁主动）`, 'system');
+          addLog(`⚠ ${p.name} 缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}（攻减半/禁主动）`, 'system', { targetIds: [p.id] });
           emitFx('float', { nodeId: p.location, text: `缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}`, kind: 'dmg' });
         }
       });
 
       if (Engine.checkVictory()) return;
 
-      // 3. 人体炸弹倒计时自爆
+      // 2. 人体炸弹倒计时自爆
       state.players.forEach((p) => {
         if (p.status !== 'alive' || !p.bomb) return;
         p.bomb.turnsLeft -= 1;
         if (p.bomb.turnsLeft <= 0) {
           p.bomb = null;
-          addLog(`💥 轰隆！${p.name} 身上的黑市人体炸弹引爆（-1 命）！`, 'kill');
+          addLog(`💥 轰隆！${p.name} 身上的黑市人体炸弹引爆（-1 命）！`, 'kill', { targetIds: [p.id] });
           applyHpDamage(p, 1, null, { canDodge: false, reason: '人体炸弹自爆身亡' });
         }
       });
 
       if (Engine.checkVictory()) return;
 
-      // 4. 第 10 回合起地图坍塌（含监狱外坍塌自动防卡死越狱）
+      // 3. 残局坍塌：正式坍塌（滞留先扣 -0.5 命不可闪避） + 提前 1 回合预告下一个坍塌目标
       if (state.config.collapseEnabled && state.turn >= state.config.collapseStartTurn) {
-        const candidates = Object.values(state.nodes).filter((n) => n.collapsible && !n.collapsed);
-        if (candidates.length > 0) {
-          const victimNode = candidates[Math.floor(Math.random() * candidates.length)];
+        let victimNode = state.nextCollapseNodeId ? getNode(state.nextCollapseNodeId) : null;
+        if (!victimNode || victimNode.collapsed || !victimNode.collapsible) {
+          victimNode = Engine.pickNextCollapseTarget();
+        }
+        state.nextCollapseNodeId = null;
+
+        if (victimNode) {
           victimNode.collapsed = true;
           victimNode.barrierUntilTurn = 0;
-          addLog(`🌋 【${victimNode.name}】永久坍塌！`, 'system');
+          addLog(`🌋 【${victimNode.name}】永久坍塌！`, 'system', { locId: victimNode.id });
           if (victimNode.droppedArtifacts.length > 0) {
             victimNode.droppedArtifacts.forEach((sqId) => {
               state.artifacts[sqId].droppedAt = null;
@@ -3125,10 +3543,23 @@
             });
             victimNode.droppedArtifacts = [];
           }
-          emitFx('banner', { kicker: `COLLAPSE // TURN ${state.turn}`, title: `${victimNode.name} 永久坍塌`, sub: '战区持续收缩，绝死对决逼近！', mood: 'p5r', durationMs: 2150 });
+          emitFx('banner', { kicker: `COLLAPSE // TURN ${state.turn}`, title: `${victimNode.name} 永久坍塌`, sub: '滞留者承受 -0.5❤️ 塌方伤害，存活者紧急逃生！', mood: 'p5r', durationMs: 2400 });
           emitFx('sfx', { name: 'collapse' });
 
           const safeLands = Object.values(state.nodes).filter((n) => !n.collapsed && n.layer === 'land' && n.kind !== 'prison_in');
+
+          // 先对滞留在坍塌地点的存活玩家结算 -0.5 命不可闪避塌方伤害，未死亡者再逃生
+          state.players.forEach((p) => {
+            if (p.status === 'alive' && p.location === victimNode.id) {
+              addLog(`💥 ${p.name} 滞留于坍塌的【${victimNode.name}】，承受 -0.5❤️ 塌方伤害！`, 'kill', { targetIds: [p.id] });
+              applyHpDamage(p, 0.5, null, { canDodge: false, reason: `在【${victimNode.name}】塌方中丧生` });
+              if (p.status === 'alive' && safeLands.length > 0) {
+                const safe = safeLands[Math.floor(Math.random() * safeLands.length)];
+                movePlayerTo(p, safe.id, { silent: true });
+                addLog(`🏃 ${p.name} 负伤从【${victimNode.name}】逃生至【${safe.name}】！`, 'normal', { targetIds: [p.id] });
+              }
+            }
+          });
 
           // 若监狱外坍塌，同步崩毁监狱围墙并释放所有在押者，彻底杜绝软锁死
           if (victimNode.id === 'land_prison_out' && safeLands.length > 0) {
@@ -3137,23 +3568,27 @@
               if (p.status === 'alive' && p.location === 'land_prison_in') {
                 const safe = safeLands[Math.floor(Math.random() * safeLands.length)];
                 movePlayerTo(p, safe.id, { silent: true });
-                addLog(`🔓 监狱随坍塌崩毁，${p.name} 趁乱逃生至【${safe.name}】！`, 'system');
+                addLog(`🔓 监狱随坍塌崩毁，${p.name} 趁乱逃生至【${safe.name}】！`, 'system', { targetIds: [p.id] });
               }
             });
           }
-
-          state.players.forEach((p) => {
-            if (p.status === 'alive' && p.location === victimNode.id && safeLands.length > 0) {
-              const safe = safeLands[Math.floor(Math.random() * safeLands.length)];
-              movePlayerTo(p, safe.id, { silent: true });
-              addLog(`🏃 ${p.name} 从坍塌的【${victimNode.name}】紧急逃生至【${safe.name}】！`, 'normal');
-            }
-          });
         }
       }
 
       if (Engine.checkVictory()) return;
-      scheduleHostTask(() => Engine.beginNextTurn(), 1400);
+
+      // 提前 1 回合锁定并预告下一个坍塌目标
+      if (state.config.collapseEnabled && state.turn >= state.config.collapseStartTurn - 1) {
+        const nextNode = Engine.pickNextCollapseTarget();
+        state.nextCollapseNodeId = nextNode ? nextNode.id : null;
+        if (nextNode) {
+          addLog(`⚠ 坍塌预警：下回合末【${nextNode.name}】即将永久坍塌！滞留将承受 -0.5❤️ 塌方伤害！`, 'system', { locId: nextNode.id });
+          emitFx('nodePulse', { nodeId: nextNode.id });
+        }
+      }
+
+      const pauseMs = Math.max(1200, (window.VFX?.getRemainingBannerMs?.() || 0) + 450);
+      scheduleHostTask(() => Engine.beginNextTurn(), pauseMs);
     },
 
     checkVictory() {
@@ -3180,12 +3615,19 @@
   });
 
   // ========================================================================
-  // 7. Tactical AI Brain (Solo & Disconnect Takeover)
+  // 7. Tactical AI Brain (Solo & Disconnect Takeover — v2.4 Synced)
   // ========================================================================
   Object.assign(AI, {
+    getSyncedDelay() {
+      const baseCfg = clamp(Number(state.config.aiDelayMs) || 1600, 400, 3500);
+      const speedPause = window.VFX?.getSpeedConfig?.().actionPauseMs || 1500;
+      const bannerRem = window.VFX?.getRemainingBannerMs?.() || 0;
+      return Math.max(baseCfg, speedPause) + (bannerRem > 0 ? bannerRem + 260 : 0);
+    },
+
     scheduleTick() {
       if (!isHostAuthority() || !state.started || state.phase === 'gameover') return;
-      const delay = clamp(Number(state.config.aiDelayMs) || 1600, 400, 3500);
+      const delay = AI.getSyncedDelay();
       const randHand = () => ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
 
       if (state.phase === 'rps' && state.rps && !state.rps.revealed) {
@@ -3209,7 +3651,7 @@
         } else if (state.initiative.mode === 'pick_slot') {
           const first = getPlayer(state.initiative.firstWinnerId);
           if (first && first.isAI) {
-            scheduleHostTask(() => Engine.pickInitiativeSlot(first.id, Math.random() < 0.65 ? 0 : state.initiative.allWinners.length - 1), delay);
+            scheduleHostTask(() => Engine.pickInitiativeSlot(first.id, Math.random() < 0.65 ? 0 : state.initiative.allWinners.length - 1), Math.min(delay, 2200));
           }
         }
         return;
@@ -3229,7 +3671,7 @@
         const raider = getPlayer(state.activePlayerId);
         if (raider && raider.isAI) {
           scheduleHostTask(() => {
-            const moves = getReachableMoveNodes(raider);
+            const moves = getReachableMoveNodes(raider).filter((n) => n.id !== state.nextCollapseNodeId);
             if (moves.length > 0 && Math.random() < 0.7) {
               Engine.resolveStealthReveal(raider.id, { subAction: 'move', destId: moves[Math.floor(Math.random() * moves.length)].id });
             } else {
@@ -3254,7 +3696,7 @@
 
     resolvePending(actor, pa) {
       if (pa.type === 'blackmarket') {
-        const enemies = state.players.filter((p) => p.status === 'alive' && p.id !== actor.id && !needsPinchPigFace(actor, p));
+        const enemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== actor.id && !needsPinchPigFace(actor, p) && (!isFogBlockedFor(actor) || p.location === actor.location));
         const target = enemies[0] || null;
         for (const cid of pa.contracts) {
           if (cid === 'bm_swap_pants' || cid === 'bm_bounty_strip') {
@@ -3268,9 +3710,13 @@
         }
         Engine.resolvePendingAction(actor.id, { cancel: true });
       } else if (pa.type === 'wish_pick') {
-        const enemies = state.players.filter((p) => p.status === 'alive' && p.id !== actor.id);
+        if (actor.hp <= 1.5 || actor.pants < actor.maxPants) {
+          Engine.resolvePendingAction(actor.id, { wishId: 'divine_reset' });
+          return;
+        }
+        const enemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== actor.id);
         const wanted = enemies.find((e) => e.wanted) || enemies[0];
-        if (wanted && wanted.location !== 'land_prison_in' && !state.nodes.land_prison_out?.collapsed) {
+        if (wanted && wanted.location !== 'land_prison_in' && !state.nodes.land_prison_out?.collapsed && !isBarrierActive(wanted.location)) {
           Engine.resolvePendingAction(actor.id, { wishId: 'jail', targetId: wanted.id });
         } else {
           Engine.resolvePendingAction(actor.id, { wishId: 'disarm' });
@@ -3287,63 +3733,119 @@
       const validHere = enemiesHere.filter((e) => !needsPinchPigFace(actor, e));
       const allAliveEnemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== actor.id);
       const moves = getReachableMoveNodes(actor);
+      const safeMoves = moves.filter((n) => n.id !== state.nextCollapseNodeId);
+      const movePool = safeMoves.length > 0 ? safeMoves : moves;
 
-      if (actor.bomb && validHere.length > 0) { Engine.executePlayerAction(actor.id, { action: 'pass_bomb', targetId: validHere[0].id }); return; }
+      // 1. 优先过继人体炸弹
+      if (actor.bomb && validHere.length > 0) {
+        Engine.executePlayerAction(actor.id, { action: 'pass_bomb', targetId: validHere[0].id });
+        return;
+      }
 
-      if (curNode && curNode.layer !== 'land' && !(curNode.layer === 'ocean' && hasEffectiveFrogMask(actor))) {
+      // 2. 逃离即将坍塌的危险节点
+      if (state.nextCollapseNodeId && actor.location === state.nextCollapseNodeId && !actor.parasiteHostId && movePool.length > 0) {
+        Engine.executePlayerAction(actor.id, { action: 'move', destId: movePool[Math.floor(Math.random() * movePool.length)].id, carryIds: [] });
+        return;
+      }
+
+      // 3. 海空缺氧自救（海王在海洋免疫）
+      if (curNode && curNode.layer !== 'land' && !(curNode.layer === 'ocean' && isOceanOxygenImmune(actor))) {
         if (actor.oxygenTurns >= state.config.oxygenMax - 2) {
           if (hasEffectiveOxygenTank(actor)) { Engine.executePlayerAction(actor.id, { action: 'breathe' }); return; }
-          const landDest = moves.find((n) => n.layer === 'land');
+          const landDest = movePool.find((n) => n.layer === 'land');
           if (landDest) { Engine.executePlayerAction(actor.id, { action: 'move', destId: landDest.id, carryIds: [] }); return; }
         }
       }
 
-      if (curNode?.id === 'sky_one') {
-        const sky2 = moves.find((n) => n.layer === 'sky' && n.id !== 'sky_one');
-        if (sky2) { Engine.executePlayerAction(actor.id, { action: 'move', destId: sky2.id, carryIds: [] }); return; }
-      }
-
+      // 4. 寄生附身态：0 步免费破体奇袭
       if (actor.parasiteHostId) {
         const host = getPlayer(actor.parasiteHostId);
-        if (host && ((host.pants <= 0 && actor.knives > 0) || Math.random() < 0.45)) {
-          Engine.executePlayerAction(actor.id, { action: 'use_skill', burstMode: host.pants <= 0 && actor.knives > 0 ? 'stab' : 'strip' });
+        if (host && host.pants <= 0 && actor.knives >= 1) {
+          Engine.executePlayerAction(actor.id, { action: 'use_skill', burstMode: 'stab' });
+          return;
+        }
+        if (host && Math.random() < 0.45) {
+          Engine.executePlayerAction(actor.id, { action: 'use_skill', burstMode: 'strip' });
           return;
         }
         Engine.executePlayerAction(actor.id, { action: 'pass' });
         return;
       }
 
+      // 5. 普通人 0 步免费黑市抽契约
+      if (actor.roleId === 'normal' && curNode?.kind === 'blackmarket' && actor.blackMarketFreeTurn !== state.turn) {
+        Engine.executePlayerAction(actor.id, { action: 'blackmarket_draw' });
+        return;
+      }
+
+      // 6. 拾取地上神器
       if (curNode && curNode.droppedArtifacts.length > 0) {
         Engine.executePlayerAction(actor.id, { action: 'pickup_artifact', sqId: curNode.droppedArtifacts[0] });
         return;
       }
 
-      const zeroPantsEnemy = validHere.find((e) => e.pants <= 0);
-      if (zeroPantsEnemy && actor.knives >= 1) {
-        if (actor.roleId === 'piggy' && actor.activeCharges > 0 && !actor.piggyStealArmed && zeroPantsEnemy.knives > 0 && !isHypoxic(actor)) {
-          Engine.executePlayerAction(actor.id, { action: 'use_skill' });
-          return;
-        }
-        Engine.executePlayerAction(actor.id, { action: 'stab', targetId: zeroPantsEnemy.id });
+      // 7. 忍者优先弹刃解锁攻击态
+      if (actor.roleId === 'ninja' && !actor.bladeReady) {
+        Engine.executePlayerAction(actor.id, { action: 'blade_draw' });
         return;
       }
 
-      if (hasSQ(actor, 'SQ2') && moves.length > 0) {
-        for (const dest of moves) {
+      // 8. 同地点 0 裤斩杀（含突袭者刃锋分伤）
+      const zeroTargets = getZeroPantsTargetsAt(actor, actor.location);
+      if (zeroTargets.length > 0 && actor.knives >= 1) {
+        if (actor.roleId === 'raider' && zeroTargets.length >= 2) {
+          const totalDmg = Engine.calcStabDamage(actor);
+          const sorted = [...zeroTargets].sort((a, b) => a.hp - b.hp);
+          let rem = totalDmg;
+          const splitAlloc = {};
+          for (const t of sorted) {
+            if (rem <= 0) break;
+            const need = Math.min(rem, Math.max(0.5, Math.ceil(t.hp * 2) / 2));
+            splitAlloc[t.id] = roundHalf(need);
+            rem = roundHalf(rem - need);
+          }
+          if (rem > 0) {
+            const firstId = sorted[0].id;
+            splitAlloc[firstId] = roundHalf((splitAlloc[firstId] || 0) + rem);
+          }
+          Engine.executePlayerAction(actor.id, { action: 'stab', splitAlloc });
+          return;
+        }
+        const playerZero = zeroTargets.find((t) => !t.isWarden);
+        if (playerZero) {
+          if (actor.roleId === 'piggy' && actor.activeCharges > 0 && !actor.piggyStealArmed && playerZero.player.knives > 0 && !isHypoxic(actor)) {
+            Engine.executePlayerAction(actor.id, { action: 'use_skill' });
+            return;
+          }
+          Engine.executePlayerAction(actor.id, { action: 'stab', targetId: playerZero.id });
+          return;
+        }
+      }
+
+      // 9. SQ2 利刃突进（对 0 裤目标必须持刀）
+      if (hasSQ(actor, 'SQ2') && movePool.length > 0 && (actor.roleId !== 'ninja' || actor.bladeReady)) {
+        for (const dest of movePool) {
           const t = getAlivePlayersAt(dest.id, actor.id).find((e) => !needsPinchPigFace(actor, e));
-          if (t && (t.pants <= 0 || Math.random() < 0.55)) {
+          if (!t) continue;
+          if (t.pants <= 0 && actor.knives >= 1) {
+            Engine.executePlayerAction(actor.id, { action: 'sq2_dash', destId: dest.id, targetId: t.id });
+            return;
+          }
+          if (t.pants > 0 && Math.random() < 0.5) {
             Engine.executePlayerAction(actor.id, { action: 'sq2_dash', destId: dest.id, targetId: t.id });
             return;
           }
         }
       }
 
+      // 10. 捏猪脸
       const unpinched = enemiesHere.find((e) => needsPinchPigFace(actor, e));
       if (unpinched && Math.random() < 0.65) {
         Engine.executePlayerAction(actor.id, { action: 'pinch_pigface', targetId: unpinched.id });
         return;
       }
 
+      // 11. 同地点寄生或扒裤
       if (validHere.length > 0) {
         const target = validHere[0];
         if (actor.roleId === 'parasite' && actor.activeCharges > 0 && !isHypoxic(actor) && target.parasiteHostId !== actor.id && Math.random() < 0.45) {
@@ -3356,15 +3858,17 @@
         }
       }
 
+      // 12. SQ5 / SQ6（遵守迷雾禁跨地点限制）
       if (hasSQ(actor, 'SQ5') && actor.knives === 0) {
-        const armed = allAliveEnemies.find((e) => e.knives > 0 && !needsPinchPigFace(actor, e) && (e.location === actor.location || (!isBarrierActive(actor.location) && !isBarrierActive(e.location))));
+        const armed = allAliveEnemies.find((e) => e.knives > 0 && !needsPinchPigFace(actor, e) && (!isFogBlockedFor(actor) || e.location === actor.location) && (e.location === actor.location || (!isBarrierActive(actor.location) && !isBarrierActive(e.location))));
         if (armed) { Engine.executePlayerAction(actor.id, { action: 'sq5_magnet', targetId: armed.id }); return; }
       }
-      if (hasSQ(actor, 'SQ6') && actor.steps >= 2 && actor.knives >= 1 && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) {
+      if (hasSQ(actor, 'SQ6') && !isFogBlockedFor(actor) && actor.steps >= 2 && actor.knives >= 1 && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) {
         const hookable = allAliveEnemies.find((e) => e.location !== actor.location && e.location !== 'land_prison_in' && !e.parasiteHostId && !isBarrierActive(e.location) && !needsPinchPigFace(actor, e) && e.pants <= 1);
         if (hookable) { Engine.executePlayerAction(actor.id, { action: 'sq6_hook', targetId: hookable.id }); return; }
       }
 
+      // 13. 海王狱内潜海脱逃
       if (actor.roleId === 'aquaman' && curNode?.kind === 'prison_in' && actor.activeCharges > 0 && !isHypoxic(actor) && !isBarrierActive(actor.location)) {
         const oceanDests = Object.values(state.nodes).filter((n) => n.layer === 'ocean' && !n.collapsed && !isBarrierActive(n.id));
         if (oceanDests.length > 0) {
@@ -3373,8 +3877,9 @@
         }
       }
 
-      if (actor.activeCharges > 0 && !isHypoxic(actor) && Math.random() < 0.45) {
-        const validRemote = allAliveEnemies.filter((e) => !needsPinchPigFace(actor, e));
+      // 14. 主动技决策（遵守迷雾禁跨点 + 收尸人烧尸）
+      if (actor.activeCharges > 0 && !isHypoxic(actor) && Math.random() < 0.48) {
+        const validRemote = allAliveEnemies.filter((e) => !needsPinchPigFace(actor, e) && (!isFogBlockedFor(actor) || e.location === actor.location));
         if (actor.roleId === 'chili' && validRemote.length > 0) {
           const zappable = validRemote.find((e) => e.location === actor.location || (!isBarrierActive(actor.location) && !isBarrierActive(e.location)));
           if (zappable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: zappable.id }); return; }
@@ -3383,19 +3888,25 @@
           const arrestable = validRemote.find((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
           if (arrestable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: arrestable.id }); return; }
         }
-        if (actor.roleId === 'curser' && validRemote.length >= 2) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetAId: validRemote[0].id, targetBId: validRemote[1].id }); return; }
+        if (actor.roleId === 'curser' && validRemote.length >= 2) {
+          Engine.executePlayerAction(actor.id, { action: 'use_skill', targetAId: validRemote[0].id, targetBId: validRemote[1].id });
+          return;
+        }
         if (actor.roleId === 'undertaker') {
           const revivable = state.players.find((p) => p.status === 'pending_revive');
           if (revivable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: revivable.id }); return; }
+          const corpseNode = Object.values(state.nodes).find((n) => n.corpses.length > 0);
+          if (corpseNode) { Engine.executePlayerAction(actor.id, { action: 'use_skill', corpseNodeId: corpseNode.id }); return; }
         }
         if (actor.roleId === 'raider' && !actor.stealth && actor.steps === 1) { Engine.executePlayerAction(actor.id, { action: 'use_skill' }); return; }
-        if (actor.roleId === 'barrier' && validRemote.length > 0) {
-          const bn = getNode(validRemote[0].location);
+        if (actor.roleId === 'barrier' && allAliveEnemies.length > 0) {
+          const bn = getNode(allAliveEnemies[0].location);
           if (bn && bn.kind !== 'prison_in' && !bn.collapsed) { Engine.executePlayerAction(actor.id, { action: 'use_skill', nodeId: bn.id }); return; }
         }
         if (actor.roleId === 'mirror' && !state.lastActiveSkill) { Engine.executePlayerAction(actor.id, { action: 'use_skill' }); return; }
       }
 
+      // 15. 地点交互
       if (curNode?.kind === 'palace') {
         const forgeable = ALL_SQ_IDS.find((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
         if (forgeable) { Engine.executePlayerAction(actor.id, { action: 'forge_artifact', sqId: forgeable }); return; }
@@ -3408,6 +3919,7 @@
         return;
       }
 
+      // 16. 狱内越狱
       if (curNode?.kind === 'prison_in' && canAttackWardenFrom(curNode) && moves.length === 0) {
         if (state.warden.pants > 0) { Engine.executePlayerAction(actor.id, { action: 'strip_pants', targetId: 'NPC_WARDEN' }); return; }
         if (actor.knives >= 1) { Engine.executePlayerAction(actor.id, { action: 'stab', targetId: 'NPC_WARDEN' }); return; }
@@ -3415,16 +3927,22 @@
         return;
       }
 
-      if (actor.knives === 0 && Math.random() < 0.6) { Engine.executePlayerAction(actor.id, { action: 'draw_knife' }); return; }
-      if (actor.pants < actor.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land') && Math.random() < 0.55) {
+      // 17. 基础发育（拔刀 / 穿裤 / 升天蓄力）
+      if (actor.knives === 0 && Math.random() < 0.65) { Engine.executePlayerAction(actor.id, { action: 'draw_knife' }); return; }
+      if (actor.pants < actor.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(actor)) && Math.random() < 0.55) {
         Engine.executePlayerAction(actor.id, { action: 'wear_pants' });
         return;
       }
+      if (curNode?.layer === 'land' && curNode.kind !== 'prison_in' && !actor.ascendCharged && !hasSQ(actor, 'SQ4') && Math.random() < 0.18) {
+        Engine.executePlayerAction(actor.id, { action: 'charge_ascend' });
+        return;
+      }
 
-      if (moves.length > 0) {
-        const enemyNodes = moves.filter((n) => getAlivePlayersAt(n.id, actor.id).length > 0);
-        const strategic = moves.filter((n) => ['ocean_palace', 'land_blackmarket', 'land_police', 'land_dock'].includes(n.id));
-        const pool = enemyNodes.length > 0 && actor.knives > 0 ? enemyNodes : strategic.length > 0 && Math.random() < 0.55 ? strategic : moves;
+      // 18. 策略移动
+      if (movePool.length > 0) {
+        const enemyNodes = movePool.filter((n) => getAlivePlayersAt(n.id, actor.id).length > 0);
+        const strategic = movePool.filter((n) => ['ocean_palace', 'land_blackmarket', 'land_police', 'land_dock', 'sky_wish', 'sky_observatory'].includes(n.id));
+        const pool = enemyNodes.length > 0 && actor.knives > 0 ? enemyNodes : strategic.length > 0 && Math.random() < 0.55 ? strategic : movePool;
         Engine.executePlayerAction(actor.id, { action: 'move', destId: pool[Math.floor(Math.random() * pool.length)].id, carryIds: [] });
         return;
       }
@@ -3467,6 +3985,16 @@
       else { cam.rx = 54; cam.rz = -26; cam.scale = 1 * base; cam.tx = 0; cam.ty = 0; }
       applyTransform();
       ['default', 'top', 'side'].forEach((k) => document.getElementById(`btn-cam-${k}`)?.classList.toggle('is-active', k === currentPreset));
+    }
+
+    function setFocusLayer(layer) {
+      const valid = ['all', 'sky', 'land', 'ocean'].includes(layer) ? layer : 'all';
+      localUI.focusLayer = valid;
+      const scene = document.getElementById('map-scene-3d');
+      if (scene) scene.dataset.focusLayer = valid;
+      document.querySelectorAll('.cam-layer-btn').forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.layerFocus === valid);
+      });
     }
 
     function zoom(delta) {
@@ -3516,12 +4044,17 @@
       setPreset('default');
     }
 
-    return { bind, setPreset, zoom, toggleEmptyNodes, getNodeClientRect };
+    return { bind, setPreset, setFocusLayer, zoom, toggleEmptyNodes, getNodeClientRect };
   })());
 
   // ========================================================================
-  // 9. Complete DOM Renderer (UI)
+  // 9. Complete DOM Renderer (UI — v2.4)
   // ========================================================================
+  function clearConfirmArm() {
+    if (localUI.confirmArm?.timer) window.clearTimeout(localUI.confirmArm.timer);
+    localUI.confirmArm = null;
+  }
+
   Object.assign(UI, {
     renderAll() {
       const lobbyEl = document.getElementById('screen-lobby');
@@ -3560,10 +4093,16 @@
 
       const listEl = document.getElementById('lobby-player-list');
       if (listEl) {
+        const canEditAi = isHostAuthority() && !state.started;
+        const roleOptionsHtml = (selectedId) => ROLES.map((r) => `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.num} ${escapeHtml(r.name)}</option>`).join('');
+
         listEl.innerHTML = state.lobbyPlayers.map((p) => {
           const r = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
           const selfClass = p.id === state.selfId ? 'is-self' : '';
           const canKick = isHostAuthority() && p.id !== state.selfId;
+          const roleControl = p.isAI
+            ? `<select class="pk-select pk-select--xs lobby-ai-role-select" data-ai-role-select="${p.id}" ${canEditAi ? '' : 'disabled'} aria-label="指定 ${escapeHtml(p.name)} 角色">${roleOptionsHtml(p.roleId)}</select>`
+            : `<span class="seat-badge seat-badge--role">${escapeHtml(r.name)}</span>`;
           return `
             <div class="lobby-seat ${selfClass}">
               <div class="lobby-seat-info">
@@ -3572,7 +4111,7 @@
                 <span class="lobby-seat-name">${escapeHtml(p.name)}</span>
               </div>
               <div class="lobby-seat-info">
-                <span class="seat-badge seat-badge--role">${escapeHtml(r.name)}</span>
+                ${roleControl}
                 ${canKick ? `<button class="icon-close-btn" data-remove-seat="${p.id}" type="button" title="移除">✕</button>` : ''}
               </div>
             </div>
@@ -3585,7 +4124,7 @@
       const hint = document.getElementById('lobby-host-hint');
       if (startBtn) startBtn.disabled = !isHostAuthority() || state.lobbyPlayers.length < 2;
       if (addAiBtn) addAiBtn.disabled = !isHostAuthority() || state.lobbyPlayers.length >= 8;
-      if (hint) hint.textContent = isHostAuthority() ? `当前 ${state.lobbyPlayers.length}/8 人 · 可随时补位 AI 开局` : '等待房主开启对局...';
+      if (hint) hint.textContent = isHostAuthority() ? `当前 ${state.lobbyPlayers.length}/8 人 · 下拉框可手选 AI 角色，点「开始对局」按当前配置开局` : '等待房主开启对局...';
     },
 
     renderRoleDossier() {
@@ -3640,13 +4179,17 @@
 
       if (weatherEl) {
         const w = WEATHERS[state.weather] || WEATHERS.clear;
-        const nextHint = state.nextWeather ? ` → 下回合:${WEATHERS[state.nextWeather].name}` : '';
-        weatherEl.textContent = `天象: ${w.name}${nextHint}`;
+        const wOwner = state.weatherOwnerId ? getPlayer(state.weatherOwnerId) : null;
+        const ownerTag = wOwner && state.weather !== 'clear' ? `(${wOwner.name})` : '';
+        const nextHint = state.nextWeather ? ` → 下:${WEATHERS[state.nextWeather].name}` : '';
+        weatherEl.textContent = `天象: ${w.name}${ownerTag}${nextHint}`;
         weatherEl.className = `hud-tag ${state.weather === 'bloodmoon' ? 'hud-tag--danger' : state.weather !== 'clear' ? 'hud-tag--warn' : ''}`;
       }
 
       if (collapseEl) {
+        const warnNode = state.nextCollapseNodeId ? getNode(state.nextCollapseNodeId) : null;
         if (!state.config.collapseEnabled) { collapseEl.textContent = '坍塌: 已关闭'; collapseEl.className = 'hud-tag'; }
+        else if (warnNode && !warnNode.collapsed) { collapseEl.textContent = `⚠ 下回坍塌: ${warnNode.name}`; collapseEl.className = 'hud-tag hud-tag--danger'; }
         else if (state.turn < state.config.collapseStartTurn) { collapseEl.textContent = `坍塌倒计时: T${state.config.collapseStartTurn}`; collapseEl.className = 'hud-tag hud-tag--warn'; }
         else { collapseEl.textContent = '残局坍塌进行中!'; collapseEl.className = 'hud-tag hud-tag--danger'; }
       }
@@ -3674,7 +4217,7 @@
             : dropNode
               ? `<span>📍 ${escapeHtml(dropNode.name)}</span>`
               : `<span class="artifact-pips">${Array.from({ length: m.stepsNeed }, (_, i) => `<span class="artifact-pip ${i < a.progress ? 'is-filled' : ''}"></span>`).join('')}</span>`;
-        return `<div class="artifact-pill ${cls}" title="${escapeHtml(m.desc)}"><span>${escapeHtml(m.name)}</span>${rightHtml}</div>`;
+        return `<div class="artifact-pill ${cls}" data-artifact-info="${id}" title="${escapeHtml(m.desc)}"><span>${escapeHtml(m.name)}</span>${rightHtml}</div>`;
       }).join('');
     },
 
@@ -3682,15 +4225,21 @@
       const containers = { sky: document.getElementById('nodes-sky'), land: document.getElementById('nodes-land'), ocean: document.getElementById('nodes-ocean') };
       if (!containers.land) return;
 
+      const vp = document.getElementById('map-viewport');
+      if (vp) vp.classList.toggle('is-fog-immune', state.weather === 'fog' && state.weatherOwnerId === state.selfId);
+
       const self = getSelfPlayer();
       const isMyAction = state.phase === 'action' && state.activePlayerId === state.selfId && !state.pendingAction;
       const reachableSet = new Set(isMyAction && self && self.status === 'alive' ? getReachableMoveNodes(self).map((n) => n.id) : []);
       const buckets = { sky: [], land: [], ocean: [] };
+      const nowMs = Date.now();
 
       Object.values(state.nodes).forEach((node) => {
         const occupants = state.players.filter((p) => p.status === 'alive' && p.location === node.id);
         const hasWarden = node.kind === 'prison_out' && !node.collapsed;
-        const hasEntities = occupants.length > 0 || hasWarden || node.corpses.length > 0 || node.droppedArtifacts.length > 0 || isBarrierActive(node.id);
+        const isWarnCollapse = state.nextCollapseNodeId === node.id && !node.collapsed;
+        const isPulsing = (localUI.pulsingNodes.get(node.id) || 0) > nowMs;
+        const hasEntities = occupants.length > 0 || hasWarden || node.corpses.length > 0 || node.droppedArtifacts.length > 0 || isBarrierActive(node.id) || isWarnCollapse || isPulsing;
         const isSelfHere = self && self.status === 'alive' && self.location === node.id;
         const isTarget = localUI.subPanelState?.type === 'move' && reachableSet.has(node.id);
 
@@ -3698,7 +4247,9 @@
         if (isSelfHere) classes.push('is-self-loc');
         if (isTarget) classes.push('is-targetable');
         if (node.collapsed) classes.push('is-collapsed');
+        if (isWarnCollapse) classes.push('is-collapse-warn');
         if (isBarrierActive(node.id)) classes.push('is-barrier');
+        if (isPulsing) classes.push('is-recent-pulse');
         if (!hasEntities && !isTarget && !node.collapsed) classes.push('is-empty-hidden');
 
         const tokens = [];
@@ -3712,7 +4263,7 @@
         node.droppedArtifacts.forEach((sqId) => tokens.push(`<span class="node-token node-token--loot">掉落:${ARTIFACTS[sqId].short}</span>`));
         if (node.corpses.length > 0) tokens.push(`<span class="node-token node-token--corpse">尸×${node.corpses.length}</span>`);
 
-        const badge = node.collapsed ? '💥' : isBarrierActive(node.id) ? '🔮' : '';
+        const badge = node.collapsed ? '💥' : isWarnCollapse ? '⚠将塌' : isBarrierActive(node.id) ? '🔮' : '';
         if (buckets[node.layer]) {
           buckets[node.layer].push(`
             <div class="${classes.join(' ')}" data-node-id="${node.id}" style="--x:${node.x}%; --y:${node.y}%;" title="${escapeHtml(node.desc)}">
@@ -3731,6 +4282,8 @@
     renderPlayers() {
       const el = document.getElementById('ingame-player-list');
       if (!el) return;
+      const selfFogImmune = state.weather === 'fog' && state.weatherOwnerId === state.selfId;
+
       el.innerHTML = state.players.map((p) => {
         const r = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
         const node = getNode(p.location);
@@ -3748,16 +4301,24 @@
         if (p.stealth?.active) flags.push('<span class="flag-chip flag-chip--buff">量子隐身</span>');
         if (p.bomb) flags.push(`<span class="flag-chip flag-chip--wanted">💣${p.bomb.turnsLeft}T</span>`);
         if (p.frogMask) flags.push('<span class="flag-chip flag-chip--buff">🐸面罩</span>');
+        if (p.ascendCharged && p.status === 'alive') flags.push('<span class="flag-chip flag-chip--buff">☁已蓄力</span>');
+        if (p.roleId === 'ninja' && p.status === 'alive') flags.push(p.bladeReady ? '<span class="flag-chip flag-chip--buff">⚡已弹刃</span>' : '<span class="flag-chip flag-chip--oxy">未弹刃</span>');
         if (!p.oxygenTank) flags.push('<span class="flag-chip flag-chip--oxy">无氧瓶</span>');
         if (p.shield > 0) flags.push(`<span class="flag-chip flag-chip--buff">🛡×${p.shield}</span>`);
         if (p.roleId === 'reverser' && p.momentum > 0) flags.push(`<span class="flag-chip flag-chip--buff">势${p.momentum}/2</span>`);
         if (p.parasiteHostId) flags.push(`<span class="flag-chip flag-chip--debuff">寄生:${escapeHtml(getPlayer(p.parasiteHostId)?.name || '')}</span>`);
-        if (node && node.layer !== 'land' && p.status === 'alive') flags.push(`<span class="flag-chip flag-chip--oxy">缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}</span>`);
+        if (node && node.layer !== 'land' && p.status === 'alive') {
+          if (node.layer === 'ocean' && isOceanOxygenImmune(p)) {
+            flags.push('<span class="flag-chip flag-chip--buff">🌊海洋免氧</span>');
+          } else {
+            flags.push(`<span class="flag-chip flag-chip--oxy">缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}</span>`);
+          }
+        }
         if (p.savedSteps > 0) flags.push(`<span class="flag-chip flag-chip--buff">⏳存${p.savedSteps}步</span>`);
         ALL_SQ_IDS.forEach((sq) => { if (hasSQ(p, sq)) flags.push(`<span class="flag-chip flag-chip--buff">${ARTIFACTS[sq].short}</span>`); });
         if (getLinkedPartners(p.id).length > 0) flags.push('<span class="flag-chip flag-chip--wanted">命运链接</span>');
 
-        const locText = state.weather === 'fog' && p.id !== state.selfId ? '??? (迷雾)' : p.stealth?.active && p.id !== state.selfId ? '??? (隐身)' : node?.name || '-';
+        const locText = (state.weather === 'fog' && !selfFogImmune && p.id !== state.selfId) ? '??? (迷雾)' : p.stealth?.active && p.id !== state.selfId ? '??? (隐身)' : node?.name || '-';
         return `
           <div class="${cls.join(' ')}">
             <div class="p-card-head"><span class="p-card-name">${escapeHtml(p.name)}${p.isAI ? ' 🤖' : ''}</span><span class="p-card-role">${escapeHtml(r.name)}</span></div>
@@ -3791,6 +4352,8 @@
         </div>
         <div class="self-stat-group">
           ${self.steps > 0 ? `<span class="self-pill self-pill--steps">剩余 ${self.steps} 步</span>` : ''}
+          ${self.roleId === 'ninja' && !self.bladeReady ? '<span class="self-pill self-pill--warn">未弹刃 (需先弹刃)</span>' : ''}
+          ${self.ascendCharged ? '<span class="self-pill">☁已蓄力</span>' : ''}
           ${isHypoxic(self) ? '<span class="self-pill self-pill--warn">缺氧（攻减半/禁主动技）</span>' : ''}
           ${self.bomb ? `<span class="self-pill self-pill--warn">💣 炸弹剩余 ${self.bomb.turnsLeft}T</span>` : ''}
         </div>
@@ -3855,11 +4418,12 @@
         } else {
           const isPicker = ini.firstWinnerId === self.id;
           const total = ini.allWinners.length;
+          const selfFogImmune = state.weather === 'fog' && state.weatherOwnerId === self.id;
           const intelHtml = ini.allWinners
             .filter((id) => id !== ini.firstWinnerId)
             .map((id) => {
               const op = getPlayer(id);
-              const loc = state.weather === 'fog' && op?.id !== self.id ? '???' : (getNode(op?.location)?.name || '-');
+              const loc = (state.weather === 'fog' && !selfFogImmune && op?.id !== self.id) ? '???' : (getNode(op?.location)?.name || '-');
               return `<span class="init-intel-chip">${escapeHtml(op?.name || '?')} · ${escapeHtml(loc)} · ${op?.steps || 0}步 · ${op?.knives || 0}🔪 · ${op?.pants || 0}👖</span>`;
             }).join('');
           boxInit.innerHTML = `
@@ -3882,7 +4446,7 @@
           <div class="subpanel-head"><span>👁 量子隐身揭晓：请从白名单选择你上回合的暗步</span></div>
           <div class="action-btn-grid">
             <button class="pk-btn pk-btn--primary" data-stealth-act="draw_knife" type="button"><span class="btn-label">🔪 暗中拔刀</span></button>
-            <button class="pk-btn pk-btn--primary" data-stealth-act="wear_pants" type="button" ${self.pants >= self.maxPants || (state.weather === 'storm' && curNode?.layer === 'land') ? 'disabled' : ''}><span class="btn-label">👖 暗中穿裤</span></button>
+            <button class="pk-btn pk-btn--primary" data-stealth-act="wear_pants" type="button" ${self.pants >= self.maxPants || (state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(self)) ? 'disabled' : ''}><span class="btn-label">👖 暗中穿裤</span></button>
             ${curNode?.layer !== 'land' ? '<button class="pk-btn pk-btn--primary" data-stealth-act="breathe" type="button"><span class="btn-label">💨 暗中呼吸</span></button>' : ''}
           </div>
           <div class="action-btn-grid" style="margin-top:8px;">
@@ -3906,6 +4470,7 @@
 
       if (state.activePlayerId !== self.id) {
         localUI.subPanelState = null;
+        clearConfirmArm();
         boxAct.classList.remove('is-hidden');
         const activeP = getPlayer(state.activePlayerId);
         boxAct.innerHTML = `<div>当前轮到 <strong>${escapeHtml(activeP?.name || '...')}</strong>（${escapeHtml(ROLE_MAP[activeP?.roleId]?.name || '')}）行动，请静候或使用右下角战术通讯密谋...</div>`;
@@ -3924,20 +4489,35 @@
       const hiddenRaiders = state.players.filter((p) => p.status === 'alive' && p.stealth?.active && p.stealth.turnUsed < state.turn && p.id !== self.id);
       const parasitesOnMe = state.players.filter((p) => p.status === 'alive' && p.parasiteHostId === self.id);
 
+      const confirmBtn = (key, cls, quickAct, label) => {
+        const isArmed = localUI.confirmArm?.key === key;
+        const text = isArmed ? `⚠ 再点确认 · ${label}` : label;
+        return `<button class="pk-btn ${cls} ${isArmed ? 'is-confirm-arm' : ''}" data-quick-act="${quickAct}" data-confirm-key="${key}" type="button"><span class="btn-label">${text}</span></button>`;
+      };
+
+      if (self.roleId === 'ninja' && !self.bladeReady) {
+        btns.push('<button class="pk-btn pk-btn--crimson" data-quick-act="blade_draw" type="button"><span class="btn-label">⚡ 弹刃 (解锁攻击)</span></button>');
+      }
       if (self.bomb && enemiesHere.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="pass_bomb" type="button"><span class="btn-label">💣 免费过继炸弹</span></button>');
       if (!self.parasiteHostId && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="move" type="button"><span class="btn-label">➤ 移动 / 带人</span></button>');
+      if (!self.parasiteHostId && curNode?.layer === 'land' && curNode.kind !== 'prison_in' && !self.ascendCharged && !hasSQ(self, 'SQ4')) {
+        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="charge_ascend" type="button"><span class="btn-label">☁ 升天蓄力 (解锁直飞)</span></button>');
+      }
       if (!self.parasiteHostId && hasSQ(self, 'SQ2') && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq2_dash" type="button"><span class="btn-label">⚡ 利刃突进攻</span></button>');
       if (hasSQ(self, 'SQ5')) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="sq5_magnet" type="button"><span class="btn-label">🧲 吸铁石夺刀</span></button>');
       if (!self.parasiteHostId && hasSQ(self, 'SQ6') && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq6_hook" type="button"><span class="btn-label">🪝 钩爪强拉</span></button>');
 
-      const canWear = self.pants < self.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land');
+      const canWear = self.pants < self.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(self));
       btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="wear_pants" type="button" ${canWear ? '' : 'disabled'}><span class="btn-label">👖 穿裤</span></button>`);
       btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="draw_knife" type="button"><span class="btn-label">🔪 拔刀</span></button>');
 
       const hasWardenHere = canAttackWardenFrom(curNode);
       if (enemiesHere.length > 0 || hasWardenHere) {
         btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="strip_pants" type="button"><span class="btn-label">👖 扒裤</span></button>');
-        if (self.knives >= 1) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="stab" type="button"><span class="btn-label">🔪 咔！（绝杀）</span></button>');
+        if (self.knives >= 1) {
+          const ninjaLocked = self.roleId === 'ninja' && !self.bladeReady;
+          btns.push(`<button class="pk-btn pk-btn--crimson" data-open-sub="stab" type="button" ${ninjaLocked ? 'disabled' : ''}><span class="btn-label">🔪 咔！(耗1刀${ninjaLocked ? '·需弹刃' : ''})</span></button>`);
+        }
       }
       if (enemiesHere.some((e) => e.knives > 0)) btns.push('<button class="pk-btn pk-btn--ghost" data-open-sub="steal_knife" type="button"><span class="btn-label">✋ 抢刀</span></button>');
       if (enemiesHere.some((e) => needsPinchPigFace(self, e))) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="pinch_pigface" type="button"><span class="btn-label">🐷 捏猪脸</span></button>');
@@ -3947,38 +4527,43 @@
       if (curNode && curNode.droppedArtifacts.length > 0) {
         curNode.droppedArtifacts.forEach((sqId) => btns.push(`<button class="pk-btn pk-btn--accent" data-pickup-sq="${sqId}" type="button"><span class="btn-label">✨ 拾取 ${ARTIFACTS[sqId].short}</span></button>`));
       }
-      if (parasitesOnMe.length > 0) btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="shake_parasite" type="button"><span class="btn-label">💨 扒裤甩开寄生</span></button>');
+      if (parasitesOnMe.length > 0) btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="shake_parasite" type="button"><span class="btn-label">💨 扒裤甩开寄生 (自身-0.5👖)</span></button>');
       if (hiddenRaiders.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="predict_raider" type="button"><span class="btn-label">🎯 预判隐身突袭者</span></button>');
 
       if (curNode?.kind === 'police') {
         btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="police_arrest" type="button"><span class="btn-label">🚔 远程逮捕</span></button>');
         btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="police_corpse" type="button"><span class="btn-label">🚑 搬尸 +0.5❤️</span></button>');
-        btns.push('<button class="pk-btn pk-btn--danger" data-quick-act="police_surrender" type="button"><span class="btn-label">⛓ 自首入狱</span></button>');
+        btns.push(confirmBtn('police_surrender', 'pk-btn--danger', 'police_surrender', '⛓ 自首入狱'));
       } else if (curNode?.kind === 'blackmarket') {
-        btns.push('<button class="pk-btn pk-btn--crimson" data-quick-act="blackmarket_draw" type="button"><span class="btn-label">🕶 抽恶魔契约 (8选3)</span></button>');
+        const isFreeBm = self.roleId === 'normal' && self.blackMarketFreeTurn !== state.turn;
+        btns.push(`<button class="pk-btn pk-btn--crimson" data-quick-act="blackmarket_draw" type="button"><span class="btn-label">🕶 抽恶魔契约 (${isFreeBm ? '0步免费!' : '8选3'})</span></button>`);
       } else if (curNode?.kind === 'aquarium' && !self.frogMask) {
-        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="equip_frog_mask" type="button"><span class="btn-label">🐸 戴青蛙面罩</span></button>');
+        btns.push(confirmBtn('equip_frog_mask', 'pk-btn--accent', 'equip_frog_mask', '🐸 戴青蛙面罩'));
       } else if (curNode?.kind === 'ruins') {
-        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="ruins_dig" type="button"><span class="btn-label">⛏ 遗迹挖掘 (25%)</span></button>');
+        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="ruins_dig" type="button"><span class="btn-label">⛏ 遗迹挖掘 (25%→10 / 75%保底)</span></button>');
       } else if (curNode?.kind === 'palace') {
         btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="forge_artifact" type="button"><span class="btn-label">🔱 锻造龙宫神器</span></button>');
       } else if (curNode?.kind === 'wish') {
-        btns.push(`<button class="pk-btn pk-btn--primary" data-quick-act="wish_step" type="button"><span class="btn-label">🌠 许愿池 (${self.wishSteps}/3)</span></button>`);
+        btns.push(`<button class="pk-btn pk-btn--primary" data-quick-act="wish_step" type="button"><span class="btn-label">🌠 许愿池 (${self.wishSteps}/2)</span></button>`);
       } else if (curNode?.kind === 'observatory') {
         btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="set_weather" type="button"><span class="btn-label">🔭 改写下回合天象</span></button>');
       }
 
       const skillBtn = UI.buildRoleSkillButton(self);
       if (skillBtn) btns.push(skillBtn);
+
       const passLabel = hasSQ(self, 'SQ7') && self.steps > 0 ? '⏳ 沙漏存1步并结束' : '⏭ 结束行动';
-      btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="pass" type="button"><span class="btn-label">${passLabel}</span></button>`);
+      if (self.steps > 0) {
+        btns.push(confirmBtn('pass_with_steps', 'pk-btn--ghost', 'pass', passLabel));
+      } else {
+        btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="pass" type="button"><span class="btn-label">${passLabel}</span></button>`);
+      }
       boxAct.innerHTML = `<div class="action-btn-grid">${btns.join('')}</div>`;
     },
 
     buildRoleSkillButton(self) {
-      // 任意处于附身态的玩家（寄生者或盗版附身的镜像师）均可破体而出
       if (self.parasiteHostId) {
-        return '<button class="pk-btn pk-btn--crimson" data-open-sub="skill_parasite_burst" type="button"><span class="btn-label">💥 破体而出（免费扒/咔宿主）</span></button>';
+        return '<button class="pk-btn pk-btn--crimson" data-open-sub="skill_parasite_burst" type="button"><span class="btn-label">💥 0步破体而出 (咔+0.5伤)</span></button>';
       }
       const r = ROLE_MAP[self.roleId];
       if (!r || r.activeMax <= 0 || self.roleId === 'ninja') return '';
@@ -3998,10 +4583,10 @@
       if (pa.type === 'blackmarket') {
         const pickingTargetFor = localUI.subPanelState?.bmTargetContract || null;
         if (pickingTargetFor) {
-          const targets = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id);
+          const targets = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id && (!isFogBlockedFor(self) || p.location === self.location));
           box.innerHTML = `
-            <div class="subpanel-head"><span>选择黑市契约目标</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-back="1" type="button"><span class="btn-label">返回契约</span></button></div>
-            <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-bm-commit="${pickingTargetFor}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖)</span></button>`).join('')}</div>
+            <div class="subpanel-head"><span>选择黑市契约目标${isFogBlockedFor(self) ? ' (迷雾仅限同地点)' : ''}</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-back="1" type="button"><span class="btn-label">返回契约</span></button></div>
+            <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-bm-commit="${pickingTargetFor}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖)</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>
           `;
           return;
         }
@@ -4038,7 +4623,7 @@
           `;
           return;
         }
-        box.innerHTML = `<div class="subpanel-head"><span>🌠 许愿池达成！请选择 1 项神迹</span></div><div class="action-btn-grid">${WISH_OPTIONS.map((w) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-wish-pick="${w.id}" type="button" title="${escapeHtml(w.desc)}"><span class="btn-label">${escapeHtml(w.name)}</span></button>`).join('')}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>🌠 许愿池达成！请选择 1 项神迹</span></div><div class="action-btn-grid">${WISH_OPTIONS.map((w) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-wish-pick="${w.id}" type="button" title="${escapeHtml(w.desc)}"><span class="btn-label"><strong>${escapeHtml(w.name)}</strong><span class="btn-sub-line">${escapeHtml(w.shortDesc)}</span></span></button>`).join('')}</div>`;
         return;
       }
 
@@ -4048,10 +4633,7 @@
           <div class="subpanel-head"><span>⚡ 忍者【瞬身连撞】：选择距离 1 单位撞击（1伤，撞死可连撞）</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-ninja-skip="1" type="button"><span class="btn-label">停止连撞</span></button></div>
           <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-ninja-hit="${t.id}" type="button"><span class="btn-label">⚡ 撞击 ${escapeHtml(t.name)}（${escapeHtml(getNode(t.nodeId)?.name || '')}）</span></button>`).join('')}</div>
         `;
-        return;
       }
-
-
     },
 
     renderLocalSubpanel(box, self, sub) {
@@ -4059,6 +4641,7 @@
       const curNode = getNode(self.location);
       const enemiesHere = getAlivePlayersAt(self.location, self.id);
       const aliveEnemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id);
+      const fogBlocked = isFogBlockedFor(self);
       const targetTags = (t) => {
         const tags = [];
         if (needsPinchPigFace(self, t)) tags.push('🐷需捏脸');
@@ -4071,9 +4654,32 @@
       if (sub.type === 'move') {
         const moves = getReachableMoveNodes(self);
         const carryable = enemiesHere.filter((e) => !e.parasiteHostId);
-        const carryChecks = carryable.map((e) => `
-          <label class="pk-check"><input type="checkbox" data-carry-id="${e.id}" ${(sub.carryIds || []).includes(e.id) ? 'checked' : ''} /><span class="pk-check-box"></span><span class="pk-check-text">强带 ${escapeHtml(e.name)}${needsPinchPigFace(self, e) ? ' [🐷需捏脸]' : ''}</span></label>
-        `).join('');
+        const carryChecks = carryable.map((e) => {
+          const knifeBlocked = self.knives === 0 && e.knives >= 1;
+          const checked = (sub.carryIds || []).includes(e.id) && !knifeBlocked;
+          return `
+            <label class="pk-check ${knifeBlocked ? 'is-disabled' : ''}">
+              <input type="checkbox" data-carry-id="${e.id}" ${checked ? 'checked' : ''} ${knifeBlocked ? 'disabled' : ''} />
+              <span class="pk-check-box"></span>
+              <span class="pk-check-text">强带 ${escapeHtml(e.name)}${knifeBlocked ? ' [持刀不可带]' : needsPinchPigFace(self, e) ? ' [🐷需捏脸]' : ''}</span>
+            </label>
+          `;
+        }).join('');
+
+        const isFromStable = curNode?.kind === 'stable';
+        const renderDestBtn = (n, cls) => {
+          const warnTag = state.nextCollapseNodeId === n.id ? ' ⚠将塌' : '';
+          if (isFromStable && n.layer === 'land') {
+            const strippables = getAlivePlayersAt(n.id, self.id).filter((t) => !needsPinchPigFace(self, t) && t.pants > 0);
+            if (strippables.length > 1) {
+              return strippables.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-move-dest="${n.id}" data-stable-target="${t.id}" type="button"><span class="btn-label">🐎 空降【${escapeHtml(n.name)}】扒 ${escapeHtml(t.name)}${warnTag}</span></button>`).join('');
+            }
+            const bonus = strippables.length === 1 ? ` · 扒${strippables[0].name}` : ' · +1🔪';
+            return `<button class="pk-btn pk-btn--accent pk-btn--sm" data-move-dest="${n.id}" type="button"><span class="btn-label">🐎 ${escapeHtml(n.name)}${escapeHtml(bonus)}${warnTag}</span></button>`;
+          }
+          return `<button class="pk-btn ${cls} pk-btn--sm" data-move-dest="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)}${warnTag}</span></button>`;
+        };
+
         const groups = [
           { layer: 'sky', label: '☁ 天空', cls: 'pk-btn--accent' },
           { layer: 'land', label: '🏔 陆地', cls: 'pk-btn--primary' },
@@ -4081,10 +4687,10 @@
         ].map((g) => {
           const list = moves.filter((n) => n.layer === g.layer);
           if (list.length === 0) return '';
-          return `<div class="move-group-row"><span class="move-group-label">${g.label}</span>${list.map((n) => `<button class="pk-btn ${g.cls} pk-btn--sm" data-move-dest="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
+          return `<div class="move-group-row"><span class="move-group-label">${g.label}</span>${list.map((n) => renderDestBtn(n, g.cls)).join('')}</div>`;
         }).join('');
         box.innerHTML = `
-          <div class="subpanel-head"><span>➤ 选择目的地（也可点击地图高亮节点）</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>➤ 选择目的地${carryable.length ? '（单次限强带 1 人）' : ''}</span>${closeBtn}</div>
           ${carryChecks ? `<div class="action-btn-grid" style="margin-bottom:6px;">${carryChecks}</div>` : ''}
           ${groups}
         `;
@@ -4092,19 +4698,31 @@
       }
 
       if (sub.type === 'sq2_dash') {
+        const ninjaLocked = self.roleId === 'ninja' && !self.bladeReady;
         const combos = [];
         getReachableMoveNodes(self).forEach((n) => {
           const foes = getAlivePlayersAt(n.id, self.id);
           if (foes.length === 0 && n.kind !== 'prison_out') combos.push(`<button class="pk-btn pk-btn--ghost pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="" type="button"><span class="btn-label">突进至 ${escapeHtml(n.name)} (空)</span></button>`);
-          foes.forEach((f) => combos.push(`<button class="pk-btn pk-btn--crimson pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="${f.id}" type="button"><span class="btn-label">⚡ 突进【${escapeHtml(n.name)}】斩 ${escapeHtml(f.name)} (${f.pants}👖)</span></button>`));
-          if (n.kind === 'prison_out') combos.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="NPC_WARDEN" type="button"><span class="btn-label">⚡ 突进斩典狱长</span></button>`);
+          foes.forEach((f) => {
+            const noKnifeHp = f.pants <= 0 && self.knives < 1;
+            const dis = ninjaLocked || noKnifeHp;
+            const note = ninjaLocked ? ' [需先弹刃]' : noKnifeHp ? ' [0刀不可扣血]' : f.pants <= 0 ? ' (耗1刀斩)' : ` (${f.pants}👖)`;
+            combos.push(`<button class="pk-btn pk-btn--crimson pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="${f.id}" type="button" ${dis ? 'disabled' : ''}><span class="btn-label">⚡ 突进【${escapeHtml(n.name)}】${escapeHtml(f.name)}${note}</span></button>`);
+          });
+          if (n.kind === 'prison_out') {
+            const noKnifeWarden = state.warden.pants <= 0 && self.knives < 1;
+            const dis = ninjaLocked || noKnifeWarden;
+            combos.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="NPC_WARDEN" type="button" ${dis ? 'disabled' : ''}><span class="btn-label">⚡ 突进斩典狱长${noKnifeWarden ? ' [0刀不可扣血]' : ''}</span></button>`);
+          }
         });
-        box.innerHTML = `<div class="subpanel-head"><span>⚡ SQ2 利刃突进（1步移动 + 免费攻击 1 次）</span>${closeBtn}</div><div class="action-btn-grid">${combos.join('')}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>⚡ SQ2 利刃突进（对0裤扣血须耗1刀）</span>${closeBtn}</div><div class="action-btn-grid">${combos.join('')}</div>`;
         return;
       }
 
       if (['strip_pants', 'stab', 'steal_knife', 'pinch_pigface', 'steal_tank', 'pass_bomb', 'police_arrest', 'sq5_magnet', 'sq6_hook'].includes(sub.type)) {
-        let targets = ['police_arrest', 'sq5_magnet', 'sq6_hook'].includes(sub.type) ? aliveEnemies : enemiesHere;
+        const isRemoteAct = ['police_arrest', 'sq5_magnet', 'sq6_hook'].includes(sub.type);
+        let targets = isRemoteAct ? aliveEnemies : enemiesHere;
+        if (isRemoteAct && fogBlocked) targets = targets.filter((e) => e.location === self.location);
         if (sub.type === 'police_arrest') targets = targets.filter((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
         if (sub.type === 'steal_knife') targets = targets.filter((e) => e.knives > 0);
         if (sub.type === 'sq5_magnet') targets = targets.filter((e) => e.knives > 0 && (e.location === self.location || (!isBarrierActive(self.location) && !isBarrierActive(e.location))));
@@ -4120,7 +4738,49 @@
         if ((sub.type === 'strip_pants' || sub.type === 'stab') && canAttackWardenFrom(curNode)) {
           items.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-target-act="${sub.type}" data-target="NPC_WARDEN" type="button"><span class="btn-label">NPC 典狱长 (${state.warden.pants}👖/${state.warden.hp}❤️)</span></button>`);
         }
-        box.innerHTML = `<div class="subpanel-head"><span>选择目标</span>${closeBtn}</div><div class="action-btn-grid">${items.join('') || '<span>暂无符合条件的目标</span>'}</div>`;
+
+        // 突袭者同房 >=2 名 0 裤合法目标：展开「⚔ 刃锋分伤」卡片
+        let splitHtml = '';
+        if (sub.type === 'stab' && self.roleId === 'raider') {
+          const zeroList = getZeroPantsTargetsAt(self, self.location);
+          if (zeroList.length >= 2) {
+            const totalDmg = Engine.calcStabDamage(self);
+            if (!sub.splitAlloc) {
+              sub.splitAlloc = {};
+              zeroList.forEach((z) => { sub.splitAlloc[z.id] = 0; });
+            }
+            const used = roundHalf(Object.values(sub.splitAlloc).reduce((a, b) => a + (Number(b) || 0), 0));
+            const rem = roundHalf(totalDmg - used);
+            const rows = zeroList.map((z) => {
+              const curAmt = roundHalf(sub.splitAlloc[z.id] || 0);
+              return `
+                <div class="split-row">
+                  <span>${escapeHtml(z.name)} (❤️${z.hp})</span>
+                  <div class="split-stepper">
+                    <button class="split-btn" data-split-adj="${z.id}" data-delta="-0.5" type="button" ${curAmt <= 0 ? 'disabled' : ''}>−</button>
+                    <span class="split-val">${curAmt}</span>
+                    <button class="split-btn" data-split-adj="${z.id}" data-delta="0.5" type="button" ${rem < 0.5 ? 'disabled' : ''}>+</button>
+                  </div>
+                </div>
+              `;
+            }).join('');
+            splitHtml = `
+              <div class="raider-split-card">
+                <div class="raider-split-head">
+                  <span>⚔ 刃锋分伤 (1步+1刀 · 总额 ${totalDmg})</span>
+                  <span>待分配: ${rem}</span>
+                </div>
+                ${rows}
+                <button class="pk-btn pk-btn--crimson pk-btn--sm" data-split-confirm="1" type="button" ${rem !== 0 ? 'disabled' : ''}>
+                  <span class="btn-label">⚔ 确认分伤斩击 (${used}/${totalDmg})</span>
+                </button>
+              </div>
+            `;
+          }
+        }
+
+        const fogNote = isRemoteAct && fogBlocked ? ' · 迷雾屏蔽跨点远程' : '';
+        box.innerHTML = `<div class="subpanel-head"><span>选择目标${fogNote}</span>${closeBtn}</div><div class="action-btn-grid">${items.join('') || '<span>暂无符合条件的目标</span>'}</div>${splitHtml}`;
         return;
       }
 
@@ -4130,7 +4790,7 @@
           <div class="subpanel-head"><span>🎯 在【${escapeHtml(curNode?.name)}】预判隐身突袭者现身</span>${closeBtn}</div>
           <div class="action-btn-grid">${raiders.map((r) => `
             <button class="pk-btn pk-btn--accent pk-btn--sm" data-predict="${r.id}" data-mode="strip" type="button"><span class="btn-label">预判扒裤 → ${escapeHtml(r.name)}</span></button>
-            ${self.knives >= 1 ? `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-predict="${r.id}" data-mode="stab" type="button"><span class="btn-label">预判绝杀 → ${escapeHtml(r.name)}</span></button>` : ''}
+            ${self.knives >= 1 ? `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-predict="${r.id}" data-mode="stab" type="button"><span class="btn-label">预判绝杀(耗1刀) → ${escapeHtml(r.name)}</span></button>` : ''}
           `).join('')}</div>
         `;
         return;
@@ -4138,17 +4798,17 @@
 
       if (sub.type === 'forge_artifact') {
         const list = ALL_SQ_IDS.filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
-        box.innerHTML = `<div class="subpanel-head"><span>🔱 选择推进锻造的龙宫神器（8件常驻）</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-forge-sq="${id}" type="button" title="${escapeHtml(ARTIFACTS[id].desc)}"><span class="btn-label">${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</span></button>`).join('') || '<span>八件神器已全部出世或毁灭</span>'}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>🔱 选择推进锻造的龙宫神器（8件常驻）</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-forge-sq="${id}" type="button" title="${escapeHtml(ARTIFACTS[id].desc)}"><span class="btn-label"><strong>${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</strong><span class="btn-sub-line">${escapeHtml(ARTIFACTS[id].shortDesc)}</span></span></button>`).join('') || '<span>八件神器已全部出世或毁灭</span>'}</div>`;
         return;
       }
 
       if (sub.type === 'set_weather') {
         box.innerHTML = `
-          <div class="subpanel-head"><span>🔭 改写下回合全图天象</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>🔭 改写下回合天象（施法者独享主场特权）</span>${closeBtn}</div>
           <div class="action-btn-grid">
-            <button class="pk-btn pk-btn--crimson pk-btn--sm" data-weather-pick="bloodmoon" type="button"><span class="btn-label">🩸 血月（伤害 +0.5）</span></button>
-            <button class="pk-btn pk-btn--ghost pk-btn--sm" data-weather-pick="fog" type="button"><span class="btn-label">🌫 迷雾（隐藏地图坐标）</span></button>
-            <button class="pk-btn pk-btn--primary pk-btn--sm" data-weather-pick="storm" type="button"><span class="btn-label">⛈ 雷暴（陆地禁穿裤）</span></button>
+            <button class="pk-btn pk-btn--crimson pk-btn--sm pk-btn--rich" data-weather-pick="bloodmoon" type="button"><span class="btn-label"><strong>🩸 血月</strong><span class="btn-sub-line">全局伤+0.5 · 自己下回合初 +1🔪</span></span></button>
+            <button class="pk-btn pk-btn--ghost pk-btn--sm pk-btn--rich" data-weather-pick="fog" type="button"><span class="btn-label"><strong>🌫 迷雾</strong><span class="btn-sub-line">禁跨点远程与坐标 · 仅自己豁免</span></span></button>
+            <button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-weather-pick="storm" type="button"><span class="btn-label"><strong>⛈ 雷暴</strong><span class="btn-sub-line">陆地禁穿裤 · 自己免疫且 +0.5👖</span></span></button>
           </div>
         `;
         return;
@@ -4159,10 +4819,10 @@
         if (effRole === 'parasite_burst') {
           const host = getPlayer(self.parasiteHostId);
           box.innerHTML = `
-            <div class="subpanel-head"><span>💥 破体而出 · 奇袭宿主 ${escapeHtml(host?.name || '')}</span>${closeBtn}</div>
+            <div class="subpanel-head"><span>💥 0步破体而出 · 奇袭宿主 ${escapeHtml(host?.name || '')}</span>${closeBtn}</div>
             <div class="action-btn-grid">
-              <button class="pk-btn pk-btn--accent" data-skill-exec="parasite_burst" data-burst="strip" type="button"><span class="btn-label">破体免费扒裤</span></button>
-              <button class="pk-btn pk-btn--crimson" data-skill-exec="parasite_burst" data-burst="stab" type="button" ${self.knives >= 1 && host?.pants <= 0 ? '' : 'disabled'}><span class="btn-label">破体免费「咔」绝杀</span></button>
+              <button class="pk-btn pk-btn--accent" data-skill-exec="parasite_burst" data-burst="strip" type="button"><span class="btn-label">0步破体免费扒裤</span></button>
+              <button class="pk-btn pk-btn--crimson" data-skill-exec="parasite_burst" data-burst="stab" type="button" ${self.knives >= 1 && host?.pants <= 0 ? '' : 'disabled'}><span class="btn-label">0步破体「咔」(+0.5伤 · 耗1刀)</span></button>
             </div>
           `;
           return;
@@ -4174,13 +4834,18 @@
         }
         if (['chili', 'watcher', 'parasite'].includes(effRole)) {
           let pool = effRole === 'parasite' ? enemiesHere : aliveEnemies;
+          if (effRole !== 'parasite' && fogBlocked) pool = pool.filter((e) => e.location === self.location);
           if (effRole === 'watcher') pool = pool.filter((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
-          box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
+          const fogHint = effRole !== 'parasite' && fogBlocked ? ' (迷雾仅限同地点)' : '';
+          box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标${fogHint}</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
         }
         if (effRole === 'undertaker') {
           const souls = state.players.filter((p) => p.status === 'pending_revive');
-          box.innerHTML = `<div class="subpanel-head"><span>⚰ 封魂 · 销毁待复活者资格并回 +0.5❤️</span>${closeBtn}</div><div class="action-btn-grid">${souls.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">封魂 ${escapeHtml(t.name)}</span></button>`).join('') || '<span>地府目前无待复活目标</span>'}</div>`;
+          const corpseNodes = Object.values(state.nodes).filter((n) => n.corpses.length > 0);
+          const soulBtns = souls.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">⚰ 封魂 ${escapeHtml(t.name)} (毁复活+0.5❤️)</span></button>`);
+          const corpseBtns = corpseNodes.map((n) => `<button class="pk-btn pk-btn--accent pk-btn--sm" data-skill-corpse-node="${n.id}" type="button"><span class="btn-label">🔥 烧尸【${escapeHtml(n.name)}】(${escapeHtml(n.corpses[0].name)} · +0.5❤️)</span></button>`);
+          box.innerHTML = `<div class="subpanel-head"><span>⚰ 封魂 · 销毁待复活资格或远程烧尸回 +0.5❤️</span>${closeBtn}</div><div class="action-btn-grid">${[...soulBtns, ...corpseBtns].join('') || '<span>场上暂无待复活者或尸体</span>'}</div>`;
           return;
         }
         if (effRole === 'barrier') {
@@ -4190,15 +4855,17 @@
         }
         if (effRole === 'curser') {
           const first = sub.firstTarget || null;
-          box.innerHTML = `<div class="subpanel-head"><span>🩸 命运链接 · 选择${first ? '第 2 名' : '第 1 名'}存活玩家</span>${closeBtn}</div><div class="action-btn-grid">${state.players.filter((p) => isVisibleAlive(p) && p.id !== first).map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>`;
+          const pool = state.players.filter((p) => isVisibleAlive(p) && p.id !== first && (!fogBlocked || p.location === self.location));
+          box.innerHTML = `<div class="subpanel-head"><span>🩸 命运链接 · 选择${first ? '第 2 名' : '第 1 名'}存活玩家${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
         }
         if (effRole === 'storm') {
           if (!sub.stormTarget && !sub.stormSrcNode) {
-            const occupied = Object.values(state.nodes).filter((n) => !n.collapsed && n.kind !== 'prison_in' && getAlivePlayersAt(n.id).length > 0);
+            const singlePool = state.players.filter((p) => isVisibleAlive(p) && (!fogBlocked || p.location === self.location));
+            const occupied = Object.values(state.nodes).filter((n) => !n.collapsed && n.kind !== 'prison_in' && getAlivePlayersAt(n.id).length > 0 && (!fogBlocked || n.id === self.location));
             box.innerHTML = `
-              <div class="subpanel-head"><span>🌪 乱流风暴 · 吹单人(免费) 或 吹全地点(1步)</span>${closeBtn}</div>
-              <div class="action-btn-grid">${state.players.filter((p) => isVisibleAlive(p)).map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-storm-single="${t.id}" type="button"><span class="btn-label">免费吹 ${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>
+              <div class="subpanel-head"><span>🌪 乱流风暴 · 吹单人(免费) 或 吹全地点(1步)${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div>
+              <div class="action-btn-grid">${singlePool.map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-storm-single="${t.id}" type="button"><span class="btn-label">免费吹 ${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>
               <div class="action-btn-grid" style="margin-top:6px;">${occupied.map((n) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-storm-node="${n.id}" type="button"><span class="btn-label">1步吹空【${escapeHtml(n.name)}】</span></button>`).join('')}</div>
             `;
           } else {
@@ -4210,8 +4877,8 @@
         }
         if (effRole === 'puppeteer') {
           if (!sub.puppetTarget) {
-            const sameLayer = aliveEnemies.filter((e) => getNode(e.location)?.layer === curNode?.layer);
-            box.innerHTML = `<div class="subpanel-head"><span>🧵 提线木偶 · 选择同层级目标</span>${closeBtn}</div><div class="action-btn-grid">${sameLayer.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-puppet-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${escapeHtml(getNode(t.location)?.name || '')})</span></button>`).join('') || '<span>同层级无存活目标</span>'}</div>`;
+            const sameLayer = aliveEnemies.filter((e) => getNode(e.location)?.layer === curNode?.layer && (!fogBlocked || e.location === self.location));
+            box.innerHTML = `<div class="subpanel-head"><span>🧵 提线木偶 · 选择同层级目标${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div><div class="action-btn-grid">${sameLayer.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-puppet-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${escapeHtml(getNode(t.location)?.name || '')})</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           } else {
             const pt = getPlayer(sub.puppetTarget);
             const pMoves = pt && !pt.parasiteHostId ? getReachableMoveNodes(pt) : [];
@@ -4234,6 +4901,7 @@
       const el = document.getElementById('battle-log-list');
       const ticker = document.getElementById('mobile-live-ticker');
       const logBadge = document.getElementById('mobile-log-badge');
+      const self = getSelfPlayer();
 
       if (state.logs.length > localUI.lastLogCount) {
         if (localUI.mobileTab !== 'log') {
@@ -4242,27 +4910,47 @@
         localUI.lastLogCount = state.logs.length;
       }
 
-      const reversed = [...state.logs].slice(-50).reverse();
+      const isTargetingMe = (item) => {
+        if (!self || item.actorId === state.selfId) return false;
+        if (Array.isArray(item.targetIds) && item.targetIds.includes(state.selfId)) return true;
+        if (item.isMoveToLoc && item.locId && self.status === 'alive' && item.locId === self.location) return true;
+        return false;
+      };
+
+      const reversed = [...state.logs].slice(-60).reverse();
 
       if (el) {
-        el.innerHTML = reversed.map((item, idx) => `
-          <div class="log-entry log-entry--${item.kind} ${idx < 2 ? 'is-fresh' : ''}">
-            <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
-            <span class="log-body">${formatLogHtml(item.text)}</span>
-          </div>
-        `).join('');
+        let lastTurn = null;
+        const rows = [];
+        reversed.forEach((item, idx) => {
+          if (item.turn !== lastTurn) {
+            lastTurn = item.turn;
+            rows.push(`<div class="log-turn-divider">── T${String(item.turn).padStart(2, '0')} ──</div>`);
+          }
+          const alertMe = isTargetingMe(item);
+          rows.push(`
+            <div class="log-entry log-entry--${item.kind} ${idx < 2 ? 'is-fresh' : ''} ${alertMe ? 'log-entry--alert-me' : ''}">
+              <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
+              <span class="log-body">${alertMe ? '<span class="log-me-badge">⚠ 针对你</span>' : ''}${formatLogHtml(item.text)}</span>
+            </div>
+          `);
+        });
+        el.innerHTML = rows.join('');
         el.scrollTop = 0;
       }
 
       if (ticker) {
         const latestTwo = reversed.slice(0, 2);
         ticker.innerHTML = latestTwo.length
-          ? latestTwo.map((item, idx) => `
-              <div class="ticker-line ${idx === 0 ? 'is-newest' : ''}">
-                <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
-                <span>${formatLogHtml(item.text)}</span>
-              </div>
-            `).join('')
+          ? latestTwo.map((item, idx) => {
+              const alertMe = isTargetingMe(item);
+              return `
+                <div class="ticker-line ${idx === 0 ? 'is-newest' : ''}">
+                  <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
+                  <span>${alertMe ? '<span class="log-me-badge">⚠针对你</span>' : ''}${formatLogHtml(item.text)}</span>
+                </div>
+              `;
+            }).join('')
           : '<div class="ticker-line">战局即将开幕...</div>';
       }
 
@@ -4371,10 +5059,17 @@
     on('btn-toggle-audio', 'click', toggleAudio);
     on('btn-toggle-audio-ingame', 'click', toggleAudio);
 
+    on('btn-toggle-speed', 'click', () => {
+      const next = window.VFX?.cycleSpeed?.();
+      const cfg = window.VFX?.getSpeedConfig?.();
+      if (cfg) window.VFX?.toast(`播报节奏已切换为：${cfg.label}`, 'info', 2200);
+    });
+
     on('btn-create-room', 'click', () => Net.createRoom());
     on('btn-join-room', 'click', () => Net.joinRoom(document.getElementById('input-room-code')?.value));
     on('btn-copy-invite', 'click', () => Net.copyInviteLink());
     on('btn-start-solo', 'click', () => Net.startSolo(Number(document.getElementById('select-ai-count')?.value) || 4));
+    on('select-ai-count', 'change', (e) => Net.syncSoloAiCount(Number(e.target.value) || 4));
     on('btn-add-ai', 'click', () => Net.addLobbyAi());
     on('btn-start-match', 'click', () => Engine.startMatch());
 
@@ -4436,12 +5131,30 @@
       if (rm) Net.removeLobbySeat(rm.dataset.removeSeat);
     });
 
+    document.getElementById('lobby-player-list')?.addEventListener('change', (e) => {
+      const sel = e.target.closest('[data-ai-role-select]');
+      if (sel) Net.setLobbySeatRole(sel.dataset.aiRoleSelect, sel.value);
+    });
+
+    document.getElementById('hud-artifacts-bar')?.addEventListener('click', (e) => {
+      const pill = e.target.closest('[data-artifact-info]');
+      if (!pill) return;
+      const sqId = pill.dataset.artifactInfo;
+      const meta = ARTIFACTS[sqId];
+      if (meta) window.VFX?.toast(`【${meta.name}】${meta.desc}`, 'info', 3500);
+    });
+
     on('btn-cam-default', 'click', () => Map3D.setPreset('default'));
     on('btn-cam-top', 'click', () => Map3D.setPreset('top'));
     on('btn-cam-side', 'click', () => Map3D.setPreset('side'));
     on('btn-cam-zoom-in', 'click', () => Map3D.zoom(0.12));
     on('btn-cam-zoom-out', 'click', () => Map3D.zoom(-0.12));
     on('btn-toggle-empty-nodes', 'click', () => Map3D.toggleEmptyNodes());
+
+    document.getElementById('map-camera-controls')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-layer-focus]');
+      if (btn) Map3D.setFocusLayer(btn.dataset.layerFocus);
+    });
 
     const setMobileTab = (tab) => {
       if (!['map', 'players', 'log'].includes(tab)) return;
@@ -4473,16 +5186,17 @@
         Net.sendIntent({ type: 'ACTION', action: 'move', destId: nodeId, carryIds });
         return;
       }
-      window.VFX?.toast(`【${node.name}】${node.desc}`, 'info');
+      window.VFX?.toast(`【${node.name}】${node.desc}`, 'info', 3500);
     });
 
     const backToLobby = () => {
       clearHostTasks();
+      clearConfirmArm();
       UI.closeModal();
       state.started = false;
       state.phase = 'lobby';
       localUI.subPanelState = null;
-      window.VFX?.setWeather('clear');
+      window.VFX?.setWeather('clear', false);
       window.VFX?.setMood('p3r');
       Net.broadcastState();
       UI.renderAll();
@@ -4520,6 +5234,23 @@
       const d = btn.dataset;
       const self = getSelfPlayer();
 
+      // 高危操作二次确认拦截（3秒未点自动复原）
+      if (d.confirmKey) {
+        if (localUI.confirmArm?.key !== d.confirmKey) {
+          clearConfirmArm();
+          const timer = window.setTimeout(() => {
+            localUI.confirmArm = null;
+            UI.renderActionDock();
+          }, 3000);
+          localUI.confirmArm = { key: d.confirmKey, timer };
+          UI.renderActionDock();
+          return;
+        }
+        clearConfirmArm();
+      } else {
+        clearConfirmArm();
+      }
+
       if (d.rps) { Net.sendIntent({ type: 'RPS_CHOICE', hand: d.rps }); return; }
       if (d.subRps) { Net.sendIntent({ type: 'SUB_RPS_CHOICE', hand: d.subRps }); return; }
       if (d.initRps) { Net.sendIntent({ type: 'INITIATIVE_RPS', hand: d.initRps }); return; }
@@ -4539,7 +5270,7 @@
 
       if (d.wishBack) { localUI.subPanelState = null; UI.renderActionDock(); return; }
       if (d.wishPick) {
-        if (d.wishPick === 'drain_oxy' || d.wishPick === 'disarm') Net.sendIntent({ type: 'PENDING_CHOICE', wishId: d.wishPick });
+        if (['drain_oxy', 'disarm', 'divine_reset'].includes(d.wishPick)) Net.sendIntent({ type: 'PENDING_CHOICE', wishId: d.wishPick });
         else { localUI.subPanelState = { wishMode: d.wishPick }; UI.renderActionDock(); }
         return;
       }
@@ -4552,6 +5283,22 @@
 
       if (d.ninjaSkip) { Net.sendIntent({ type: 'PENDING_CHOICE', skip: true }); return; }
       if (d.ninjaHit) { Net.sendIntent({ type: 'PENDING_CHOICE', targetId: d.ninjaHit }); return; }
+
+      // 突袭者刃锋分伤步进器与确认
+      if (d.splitAdj && localUI.subPanelState?.splitAlloc) {
+        const tid = d.splitAdj;
+        const delta = Number(d.delta) || 0;
+        const cur = roundHalf(localUI.subPanelState.splitAlloc[tid] || 0);
+        localUI.subPanelState.splitAlloc[tid] = Math.max(0, roundHalf(cur + delta));
+        UI.renderActionDock();
+        return;
+      }
+      if (d.splitConfirm && localUI.subPanelState?.splitAlloc) {
+        const alloc = { ...localUI.subPanelState.splitAlloc };
+        localUI.subPanelState = null;
+        Net.sendIntent({ type: 'ACTION', action: 'stab', splitAlloc: alloc });
+        return;
+      }
 
       if (d.closeSub) { localUI.subPanelState = null; UI.renderAll(); return; }
       if (d.quickAct) { Net.sendIntent({ type: 'ACTION', action: d.quickAct }); return; }
@@ -4569,7 +5316,13 @@
         return;
       }
 
-      if (d.moveDest) { const carryIds = localUI.subPanelState?.carryIds || []; localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'move', destId: d.moveDest, carryIds }); return; }
+      if (d.moveDest) {
+        const carryIds = localUI.subPanelState?.carryIds || [];
+        const stableTargetId = d.stableTarget || null;
+        localUI.subPanelState = null;
+        Net.sendIntent({ type: 'ACTION', action: 'move', destId: d.moveDest, carryIds, stableTargetId });
+        return;
+      }
       if (d.sq2Dest !== undefined) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'sq2_dash', destId: d.sq2Dest, targetId: d.sq2Target || null }); return; }
       if (d.targetAct) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: d.targetAct, targetId: d.target }); return; }
       if (d.predict) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'predict_raider', targetId: d.predict, mode: d.mode }); return; }
@@ -4578,6 +5331,7 @@
 
       if (d.skillExec === 'parasite_burst') { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'use_skill', burstMode: d.burst }); return; }
       if (d.skillTarget) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'use_skill', targetId: d.skillTarget }); return; }
+      if (d.skillCorpseNode) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'use_skill', corpseNodeId: d.skillCorpseNode }); return; }
       if (d.skillNode) { localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'use_skill', nodeId: d.skillNode }); return; }
       if (d.curserPick) {
         if (!localUI.subPanelState?.firstTarget) { localUI.subPanelState.firstTarget = d.curserPick; UI.renderActionDock(); }
@@ -4598,13 +5352,19 @@
       if (d.puppetMove) { const pt = localUI.subPanelState.puppetTarget; localUI.subPanelState = null; Net.sendIntent({ type: 'ACTION', action: 'use_skill', targetId: pt, puppetAction: 'move', destId: d.puppetMove }); }
     });
 
+    // 强带单选互斥（最多强带 1 人）
     document.getElementById('action-stage')?.addEventListener('change', (e) => {
       const chk = e.target.closest('input[data-carry-id]');
       if (!chk || localUI.subPanelState?.type !== 'move') return;
       const cid = chk.dataset.carryId;
-      const list = new Set(localUI.subPanelState.carryIds || []);
-      if (chk.checked) list.add(cid); else list.delete(cid);
-      localUI.subPanelState.carryIds = Array.from(list);
+      if (chk.checked) {
+        localUI.subPanelState.carryIds = [cid];
+        document.querySelectorAll('#action-stage input[data-carry-id]').forEach((other) => {
+          if (other !== chk) other.checked = false;
+        });
+      } else {
+        localUI.subPanelState.carryIds = [];
+      }
     });
   }
 

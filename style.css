@@ -1531,3 +1531,327 @@ body[data-mood="p5r"] .hud-turn-badge { color: #ffffff; box-shadow: 3px 3px 0 va
     touch-action: pan-x;
   }
 }
+/* ==========================================================================
+   v2.4 Enhancements: Tactical Feed, Log Grouping & Alerts, Map Pulse/Collapse,
+   Layer Focus, Raider Split-Damage, 2-Step Confirm & Mobile Portrait Polish
+   ========================================================================== */
+
+/* Lobby AI Role Selector */
+.lobby-ai-role-select {
+  width: auto;
+  min-width: 108px;
+  max-width: 138px;
+  padding: 2px 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #06142e;
+  border: 1.5px solid var(--accent);
+  color: #ffffff;
+  cursor: pointer;
+}
+.lobby-ai-role-select:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+/* Clickable Artifact Capsules */
+.artifact-pill {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.14s ease, background-color 0.15s ease;
+}
+.artifact-pill:hover {
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Persistent "Last Action" Tactical Feed Bar */
+.tactical-feed-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(95deg, rgba(6, 19, 46, 0.96) 0%, rgba(12, 28, 62, 0.94) 100%);
+  border: 1.5px solid var(--accent);
+  border-left: 5px solid var(--alarm);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  font-size: 12.5px;
+  min-height: 32px;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.tactical-feed-bar.is-highlight {
+  border-color: var(--crimson);
+  border-left-color: var(--alarm);
+  background: linear-gradient(95deg, rgba(84, 8, 24, 0.96) 0%, rgba(22, 6, 16, 0.94) 100%);
+}
+.tactical-feed-bar.is-flash {
+  animation: tfeed-flash 0.45s ease-out;
+}
+@keyframes tfeed-flash {
+  0% { box-shadow: 0 0 0 2px var(--alarm), 0 0 18px rgba(255, 230, 0, 0.55); transform: translateX(-4px); }
+  100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45); transform: translateX(0); }
+}
+.tfeed-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  background: var(--alarm);
+  color: #000000;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  transform: skewX(-10deg);
+}
+.tactical-feed-bar.is-highlight .tfeed-badge {
+  background: var(--crimson);
+  color: #ffffff;
+}
+.tfeed-main {
+  font-weight: 900;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tfeed-sub {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--alarm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44%;
+}
+
+/* Turn-Grouped Battle Log & [Targeted You] Red Alert */
+.log-turn-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+  border-top: 1px dashed rgba(0, 212, 255, 0.35);
+  border-bottom: 1px dashed rgba(0, 212, 255, 0.2);
+}
+.log-entry--alert-me {
+  border: 1.5px solid var(--crimson-bright) !important;
+  border-left: 5px solid var(--crimson-bright) !important;
+  background: linear-gradient(90deg, rgba(230, 0, 35, 0.32), rgba(20, 6, 14, 0.88)) !important;
+  box-shadow: 0 0 12px rgba(230, 0, 35, 0.35);
+}
+.log-me-badge {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 0 5px;
+  background: var(--crimson-bright);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 900;
+  border: 1px solid var(--alarm);
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+/* Map Node Recent Activity Pulse (3s) & Collapse Warning */
+.map-node.is-recent-pulse {
+  border-color: var(--alarm) !important;
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.85), 0 0 26px rgba(0, 212, 255, 0.9) !important;
+  animation: map-recent-pulse 0.65s ease-in-out infinite alternate;
+  z-index: 24;
+}
+@keyframes map-recent-pulse {
+  from { box-shadow: 0 0 0 2px rgba(255, 230, 0, 0.75), 0 0 14px rgba(0, 212, 255, 0.7); }
+  to { box-shadow: 0 0 0 5px rgba(255, 230, 0, 1), 0 0 32px rgba(255, 230, 0, 0.95); }
+}
+
+.map-node.is-collapse-warn {
+  border-color: var(--crimson-bright) !important;
+  background: rgba(66, 8, 18, 0.95) !important;
+  animation: collapse-warn-blink 0.8s ease-in-out infinite alternate;
+}
+@keyframes collapse-warn-blink {
+  from { box-shadow: 0 0 8px rgba(230, 0, 35, 0.65), inset 0 0 8px rgba(230, 0, 35, 0.35); }
+  to { box-shadow: 0 0 26px rgba(255, 30, 66, 1), inset 0 0 16px rgba(255, 230, 0, 0.4); }
+}
+
+/* Fog Weather Caster Immunity */
+.map-viewport.weather-fog.is-fog-immune::after {
+  content: "迷雾主场 // 施法者视野豁免";
+  background: none;
+  color: var(--emerald);
+  text-shadow: 0 2px 6px #000000;
+}
+.map-viewport.weather-fog.is-fog-immune .node-tokens {
+  opacity: 1 !important;
+  filter: none !important;
+}
+.map-viewport.weather-fog.is-fog-immune .map-node {
+  animation: none !important;
+}
+.map-viewport.weather-fog.is-fog-immune .map-node .node-tokens::after {
+  display: none !important;
+}
+
+/* 3D Map Single-Layer Focus Controls */
+.cam-sep {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(0, 212, 255, 0.45);
+  font-weight: 900;
+  padding: 0 2px;
+  user-select: none;
+}
+.map-scene-3d .map-layer {
+  transition: opacity 0.25s ease;
+}
+.map-scene-3d[data-focus-layer="sky"] .map-layer--land,
+.map-scene-3d[data-focus-layer="sky"] .map-layer--ocean,
+.map-scene-3d[data-focus-layer="land"] .map-layer--sky,
+.map-scene-3d[data-focus-layer="land"] .map-layer--ocean,
+.map-scene-3d[data-focus-layer="ocean"] .map-layer--sky,
+.map-scene-3d[data-focus-layer="ocean"] .map-layer--land {
+  opacity: 0.14;
+  pointer-events: none !important;
+}
+.map-scene-3d[data-focus-layer="sky"] .map-layer--land .map-node,
+.map-scene-3d[data-focus-layer="sky"] .map-layer--ocean .map-node,
+.map-scene-3d[data-focus-layer="land"] .map-layer--sky .map-node,
+.map-scene-3d[data-focus-layer="land"] .map-layer--ocean .map-node,
+.map-scene-3d[data-focus-layer="ocean"] .map-layer--sky .map-node,
+.map-scene-3d[data-focus-layer="ocean"] .map-layer--land .map-node {
+  pointer-events: none !important;
+}
+
+/* Inline Subtitle inside Forge / Wish Buttons (No Hover Needed on Mobile) */
+.pk-btn--rich {
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 7px 12px;
+  gap: 2px;
+}
+.pk-btn--rich .btn-label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.btn-sub-line {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0.86;
+  line-height: 1.25;
+}
+
+/* 2-Step High-Risk Button Confirmation */
+.pk-btn.is-confirm-arm {
+  background: var(--alarm) !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: 0 0 14px rgba(255, 230, 0, 0.85) !important;
+  animation: confirm-pulse 0.55s ease-in-out infinite alternate;
+}
+@keyframes confirm-pulse {
+  from { transform: skewX(-10deg) scale(1); }
+  to { transform: skewX(-10deg) scale(1.03); }
+}
+
+/* Raider Split-Damage Card */
+.raider-split-card {
+  margin-top: 10px;
+  padding: 9px 11px;
+  background: rgba(34, 6, 16, 0.92);
+  border: 2px solid var(--crimson-bright);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.raider-split-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--alarm);
+}
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 7px;
+  background: rgba(0, 0, 0, 0.42);
+  border-left: 3px solid var(--crimson);
+  font-size: 12px;
+  font-weight: 700;
+}
+.split-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.split-btn {
+  width: 26px;
+  height: 24px;
+  background: #0d1d3d;
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+}
+.split-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.split-val {
+  min-width: 38px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  color: var(--alarm);
+}
+
+/* Disabled Carry Checkbox Hint */
+.pk-check.is-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+@media (max-width: 820px) {
+  .tactical-feed-bar {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    min-height: 28px;
+    gap: 6px;
+  }
+  .tfeed-sub {
+    max-width: 38%;
+    font-size: 10.5px;
+  }
+  .map-camera-controls {
+    flex-wrap: wrap;
+    max-width: calc(100% - 12px);
+  }
+  .pk-btn.is-confirm-arm {
+    animation: none;
+    transform: none !important;
+  }
+  .game-workspace[data-mobile-tab="players"] #tactical-feed-bar,
+  .game-workspace[data-mobile-tab="log"] #tactical-feed-bar {
+    display: none;
+  }
+}

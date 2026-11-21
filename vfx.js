@@ -1,10 +1,16 @@
 /* ==========================================================================
-   Little Knife (v2.0) — VFX & Web Audio Procedural Engine (Audited Final)
+   Little Knife (v2.4) — VFX & Web Audio Procedural Engine
    Global Namespace: window.VFX
    Zero-dependency native module aligned with index.html & style.css
    ========================================================================== */
 (() => {
   'use strict';
+
+  const SPEED_PRESETS = {
+    slow:   { id: 'slow',   label: '慢速(3.8s)', bannerMs: 3800, actionPauseMs: 2200 },
+    normal: { id: 'normal', label: '标准(2.4s)', bannerMs: 2400, actionPauseMs: 1500 },
+    fast:   { id: 'fast',   label: '极速(1.2s)', bannerMs: 1200, actionPauseMs: 850 }
+  };
 
   const state = {
     initialized: false,
@@ -12,6 +18,8 @@
     audioMuted: false,
     mood: 'p3r',
     weather: 'clear',
+    fogImmune: false,
+    speed: 'slow',
     width: window.innerWidth,
     height: window.innerHeight,
     dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -31,7 +39,11 @@
     toastLayer: null,
     mapViewport: null,
     mapOverlay: null,
-    rpsClashOverlay: null
+    rpsClashOverlay: null,
+    tfeedBar: null,
+    tfeedBadge: null,
+    tfeedMain: null,
+    tfeedSub: null
   };
 
   let wCtx = null;
@@ -64,6 +76,7 @@
   let bannerBusy = false;
   let bannerTimerA = 0;
   let bannerTimerB = 0;
+  let bannerEndAt = 0;
 
   const nodeFloatStack = new Map();
 
@@ -906,25 +919,54 @@
     state.rafId = window.requestAnimationFrame(mainLoop);
   }
 
+  function getSpeedConfig() {
+    return SPEED_PRESETS[state.speed] || SPEED_PRESETS.slow;
+  }
+
+  function setSpeed(mode) {
+    if (!SPEED_PRESETS[mode]) return;
+    state.speed = mode;
+    const btn = document.getElementById('btn-toggle-speed');
+    if (btn) {
+      const lbl = btn.querySelector('.btn-label');
+      if (lbl) lbl.textContent = `播报: ${SPEED_PRESETS[mode].label}`;
+    }
+  }
+
+  function cycleSpeed() {
+    const order = ['slow', 'normal', 'fast'];
+    const next = order[(order.indexOf(state.speed) + 1) % order.length];
+    setSpeed(next);
+    return next;
+  }
+
+  function getRemainingBannerMs() {
+    if (!bannerBusy && bannerQueue.length === 0) return 0;
+    const currentRem = Math.max(0, bannerEndAt - performance.now());
+    const queuedMs = bannerQueue.length * (getSpeedConfig().bannerMs + 220);
+    return currentRem + queuedMs;
+  }
+
   function dismissCurrentBanner() {
     if (!bannerBusy || !dom.bannerBox) return;
     window.clearTimeout(bannerTimerA);
     window.clearTimeout(bannerTimerB);
+    bannerEndAt = performance.now() + 220;
     dom.bannerBox.classList.remove('is-showing');
     dom.bannerBox.classList.add('is-leaving');
     bannerTimerB = window.setTimeout(() => {
       dom.bannerBox.classList.remove('is-leaving');
       if (dom.bannerLayer) dom.bannerLayer.setAttribute('aria-hidden', 'true');
       bannerBusy = false;
+      if (bannerQueue.length === 0) bannerEndAt = 0;
       processBannerQueue();
     }, 220);
   }
 
   function processBannerQueue() {
     if (bannerBusy || bannerQueue.length === 0) return;
-    if (!dom.bannerBox) { bannerQueue.length = 0; return; }
+    if (!dom.bannerBox) { bannerQueue.length = 0; bannerEndAt = 0; return; }
 
-    // 防止积压过长导致弹幕滞后战局
     if (bannerQueue.length > 3) {
       bannerQueue.splice(0, bannerQueue.length - 3);
     }
@@ -933,7 +975,7 @@
     const item = bannerQueue.shift();
 
     dom.bannerBox.dataset.mood = item.mood || state.mood;
-    if (dom.bannerKicker) dom.bannerKicker.textContent = item.kicker || 'ACTION';
+    if (dom.bannerKicker) dom.bannerKicker.textContent = item.kicker || 'ALERT';
     if (dom.bannerText) dom.bannerText.textContent = item.title || 'LITTLE KNIFE';
     if (dom.bannerSub) dom.bannerSub.textContent = item.sub || '';
     if (dom.bannerLayer) dom.bannerLayer.setAttribute('aria-hidden', 'false');
@@ -944,8 +986,11 @@
 
     if (item.playSlide !== false) AudioEngine.play('slide');
 
-    const baseHold = typeof item.durationMs === 'number' ? item.durationMs : 2200;
-    const holdMs = bannerQueue.length >= 2 ? Math.max(1500, baseHold - 450) : baseHold;
+    const speedMs = getSpeedConfig().bannerMs;
+    const holdMs = typeof item.durationMs === 'number'
+      ? Math.max(900, Math.round(item.durationMs * (speedMs / 2400)))
+      : speedMs;
+    bannerEndAt = performance.now() + holdMs + 220;
     bannerTimerA = window.setTimeout(() => {
       dismissCurrentBanner();
     }, holdMs);
@@ -1024,15 +1069,17 @@
     document.body.dataset.mood = next;
   }
 
-  function setWeather(weather) {
+  function setWeather(weather, fogImmune = false) {
     const valid = ['clear', 'bloodmoon', 'fog', 'storm'].includes(weather) ? weather : 'clear';
     const changed = state.weather !== valid;
     state.weather = valid;
+    state.fogImmune = Boolean(fogImmune);
     document.body.dataset.weather = valid;
 
     if (dom.mapViewport) {
-      dom.mapViewport.classList.remove('weather-bloodmoon', 'weather-fog', 'weather-storm');
+      dom.mapViewport.classList.remove('weather-bloodmoon', 'weather-fog', 'weather-storm', 'is-fog-immune');
       if (valid !== 'clear') dom.mapViewport.classList.add(`weather-${valid}`);
+      if (valid === 'fog' && state.fogImmune) dom.mapViewport.classList.add('is-fog-immune');
     }
 
     if (changed) {
@@ -1198,21 +1245,37 @@
     window.setTimeout(() => el.remove(), safeType === 'emoji' ? 2800 : 2500);
   }
 
-  function banner(kicker, title, sub = '', mood = null, durationMs = 2200) {
+  function tacticalFeed({ order = '', actor = '', action = '', target = '', result = '', highlight = false, text = '' } = {}) {
+    if (!dom.tfeedBar) return;
+    const mainStr = text || (target ? `${order ? order + ' ' : ''}${actor} ▸ ${action} ▸ ${target}` : `${order ? order + ' ' : ''}${actor} ▸ ${action}`);
+    if (dom.tfeedBadge) dom.tfeedBadge.textContent = order || (highlight ? 'ALERT' : 'ACTION');
+    if (dom.tfeedMain) dom.tfeedMain.textContent = mainStr;
+    if (dom.tfeedSub) dom.tfeedSub.textContent = result || '';
+    dom.tfeedBar.classList.toggle('is-highlight', Boolean(highlight));
+    dom.tfeedBar.classList.remove('is-flash');
+    void dom.tfeedBar.offsetWidth;
+    dom.tfeedBar.classList.add('is-flash');
+  }
+
+  function banner(kicker, title, sub = '', mood = null, durationMs = null) {
     bannerQueue.push({
       kicker: String(kicker || 'ALERT'),
       title: String(title || ''),
       sub: String(sub || ''),
       mood: mood || state.mood,
-      durationMs
+      durationMs: typeof durationMs === 'number' ? durationMs : null
     });
+    tacticalFeed({ text: `${title}`, result: sub, highlight: true });
     processBannerQueue();
   }
 
-  function bannerAction({ order = '', actor = '', action = '', target = '', result = '', mood = null, durationMs = 2050 } = {}) {
-    const kicker = order ? `ORDER ${order} // ACTION` : 'TACTICAL ACTION';
-    const title = target ? `${actor} ▸ ${action} ▸ ${target}` : `${actor} ▸ ${action}`;
-    banner(kicker, title, result, mood || state.mood, durationMs);
+  function bannerAction({ order = '', actor = '', action = '', target = '', result = '', mood = null, durationMs = null, highlight = false } = {}) {
+    tacticalFeed({ order, actor, action, target, result, highlight });
+    if (highlight) {
+      const kicker = order ? `ORDER ${order} // HIGHLIGHT` : 'TACTICAL HIGHLIGHT';
+      const title = target ? `${actor} ▸ ${action} ▸ ${target}` : `${actor} ▸ ${action}`;
+      banner(kicker, title, result, mood || state.mood, durationMs);
+    }
   }
 
   function clearBannerQueue() {
@@ -1220,11 +1283,12 @@
     window.clearTimeout(bannerTimerA);
     window.clearTimeout(bannerTimerB);
     bannerBusy = false;
+    bannerEndAt = 0;
     if (dom.bannerBox) dom.bannerBox.classList.remove('is-showing', 'is-leaving');
     if (dom.bannerLayer) dom.bannerLayer.setAttribute('aria-hidden', 'true');
   }
 
-  function toast(msg, level = 'info') {
+  function toast(msg, level = 'info', durationMs = 3600) {
     if (!dom.toastLayer || !msg) return;
     const item = document.createElement('div');
     const lv = ['info', 'warn', 'danger', 'success'].includes(level) ? level : 'info';
@@ -1236,12 +1300,13 @@
       dom.toastLayer.firstChild.remove();
     }
 
+    const dur = Math.max(1200, Number(durationMs) || 3600);
     window.setTimeout(() => {
       item.style.opacity = '0';
       item.style.transform = 'translateY(-10px) skewX(-12deg)';
       item.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       window.setTimeout(() => item.remove(), 220);
-    }, 3600);
+    }, dur);
   }
 
   function setEnabled(bool) {
@@ -1311,6 +1376,11 @@
     dom.toastLayer = document.getElementById('vfx-toast-layer');
     dom.mapViewport = document.getElementById('map-viewport');
     dom.mapOverlay = document.getElementById('map-fx-overlay');
+    dom.tfeedBar = document.getElementById('tactical-feed-bar');
+    dom.tfeedBadge = document.getElementById('tfeed-badge');
+    dom.tfeedMain = document.getElementById('tfeed-main');
+    dom.tfeedSub = document.getElementById('tfeed-sub');
+    setSpeed(state.speed);
     if (dom.bannerBox) dom.bannerBox.addEventListener('click', dismissCurrentBanner);
 
     if (dom.weatherCanvas) wCtx = dom.weatherCanvas.getContext('2d');
@@ -1345,9 +1415,15 @@
     rippleOnNode,
     shake,
     edgeFlash,
+    tacticalFeed,
     banner,
     bannerAction,
     clearBannerQueue,
+    setSpeed,
+    cycleSpeed,
+    getSpeed: () => state.speed,
+    getSpeedConfig,
+    getRemainingBannerMs,
     rpsClash,
     floatOnNode,
     toast,

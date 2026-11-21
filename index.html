@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Little Knife</title>
-  <link rel="stylesheet" href="style.css?v=2.3" />
+  <link rel="stylesheet" href="style.css?v=2.4" />
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
-  <script src="vfx.js?v=2.3" defer></script>
-  <script src="game.js?v=2.3" defer></script>
+  <script src="vfx.js?v=2.4" defer></script>
+  <script src="game.js?v=2.4" defer></script>
 </head>
 <body data-mood="p3r">
   <!-- 全屏特效与视觉氛围层 -->
@@ -15,7 +15,7 @@
   <div id="vfx-halftone-layer" aria-hidden="true"></div>
   <canvas id="vfx-fx-canvas" aria-hidden="true"></canvas>
 
-  <!-- Persona 大字幕切入队列层 -->
+  <!-- Persona 高光大字幕切入队列层 -->
   <div id="vfx-banner-layer" aria-live="polite" aria-hidden="true">
     <div id="vfx-banner-box" class="banner-box">
       <div class="banner-stripe"></div>
@@ -54,7 +54,7 @@
       </div>
     </header>
 
-    <!-- 手机竖屏大厅专属：房间 / 选角 双标签切换，彻底告别挤占与滑不动 -->
+    <!-- 手机竖屏大厅专属：房间 / 选角 双标签切换 -->
     <nav id="mobile-lobby-tabs" class="mobile-lobby-tabs" aria-label="大厅视图切换">
       <button class="m-tab is-active" data-ltab="room" type="button">🏠 房间 & 开局</button>
       <button class="m-tab" data-ltab="roles" type="button">🎭 选择角色 · <span id="mobile-lobby-role-name">普通人</span></button>
@@ -96,8 +96,8 @@
                 <option value="8">8人混战 (含7 AI)</option>
               </select>
             </div>
-            <button id="btn-start-solo" class="pk-btn pk-btn--crimson" type="button">
-              <span class="btn-label">单机 AI 试玩</span>
+            <button id="btn-start-solo" class="pk-btn pk-btn--crimson" type="button" title="随机分配所有 AI 角色并立即开局">
+              <span class="btn-label">随机一键速开</span>
             </button>
           </div>
 
@@ -123,7 +123,7 @@
             <label class="pk-check">
               <input id="opt-collapse" type="checkbox" checked />
               <span class="pk-check-box"></span>
-              <span class="pk-check-text">残局地图坍塌（第10回合起）</span>
+              <span class="pk-check-text">残局地图坍塌（第10回合起 · 提前1回合预警）</span>
             </label>
             <label class="pk-check">
               <input id="opt-bounty" type="checkbox" checked />
@@ -142,7 +142,7 @@
         <div class="pk-panel panel-roster">
           <div class="panel-head-inline">
             <div class="panel-deco-tag">SQUAD // ROSTER</div>
-            <span id="lobby-host-hint" class="roster-hint">单机或联机均可随时补位 AI</span>
+            <span id="lobby-host-hint" class="roster-hint">可自由指定每个 AI 角色后点击「开始对局」</span>
           </div>
 
           <div id="lobby-player-list" class="lobby-player-list"></div>
@@ -203,6 +203,9 @@
       <div id="hud-turn-order" class="hud-turn-order" aria-label="本回合行动顺位"></div>
 
       <div class="hud-right">
+        <button id="btn-toggle-speed" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" title="切换播报与 AI 节奏">
+          <span class="btn-label">播报: 慢速(3.8s)</span>
+        </button>
         <button id="btn-toggle-empty-nodes" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" aria-pressed="false">
           <span class="btn-label">空地点: 隐藏</span>
         </button>
@@ -237,9 +240,16 @@
         <div id="ingame-player-list" class="ingame-player-list"></div>
       </aside>
 
-      <!-- 中央核心：3D 三层立体地图 + 底部指令台 -->
+      <!-- 中央核心：8 神器栏 + 常驻战术横幅 + 3D 三层立体地图 + 底部指令台 -->
       <section class="game-center-stage">
         <div id="hud-artifacts-bar" class="hud-artifacts-bar"></div>
+
+        <!-- 常驻「上一动战术横幅」 -->
+        <div id="tactical-feed-bar" class="tactical-feed-bar" aria-live="polite">
+          <span id="tfeed-badge" class="tfeed-badge">LIVE</span>
+          <span id="tfeed-main" class="tfeed-main">等待本回合行动...</span>
+          <span id="tfeed-sub" class="tfeed-sub"></span>
+        </div>
 
         <div id="map-viewport" class="map-viewport">
           <div id="map-camera-controls" class="map-camera-controls">
@@ -248,11 +258,16 @@
             <button id="btn-cam-side" class="cam-btn" type="button" title="三层纵深侧视">纵深</button>
             <button id="btn-cam-zoom-in" class="cam-btn" type="button" title="放大">+</button>
             <button id="btn-cam-zoom-out" class="cam-btn" type="button" title="缩小">−</button>
+            <span class="cam-sep" aria-hidden="true">|</span>
+            <button class="cam-btn cam-layer-btn is-active" data-layer-focus="all" type="button" title="显示全部三层">全部</button>
+            <button class="cam-btn cam-layer-btn" data-layer-focus="sky" type="button" title="仅聚焦天空层">天</button>
+            <button class="cam-btn cam-layer-btn" data-layer-focus="land" type="button" title="仅聚焦陆地层">陆</button>
+            <button class="cam-btn cam-layer-btn" data-layer-focus="ocean" type="button" title="仅聚焦海洋层">海</button>
           </div>
 
           <div class="map-drag-hint">拖拽旋转 · 滚轮缩放 · 点击节点互动</div>
 
-          <div id="map-scene-3d" class="map-scene-3d">
+          <div id="map-scene-3d" class="map-scene-3d" data-focus-layer="all">
             <div id="layer-sky" class="map-layer map-layer--sky" data-layer="sky">
               <div class="layer-plate"><span class="layer-watermark">SKY // 03</span></div>
               <div id="nodes-sky" class="layer-nodes"></div>
@@ -342,30 +357,31 @@
     <div id="modal-guide" class="pk-modal is-hidden">
       <div class="modal-header">
         <span class="modal-kicker">BRIEFING // 03 STEPS</span>
-        <h3 class="modal-title">战术速成指南</h3>
+        <h3 class="modal-title">战术速成指南 (v2.4)</h3>
         <button id="guide-close" class="icon-close-btn" type="button" aria-label="关闭">✕</button>
       </div>
 
       <div id="guide-steps" class="guide-steps">
         <div class="guide-step is-active" data-step="0">
           <div class="guide-step-num">01</div>
-          <h4>猜拳抢步 · 解释权博弈</h4>
-          <p>每回合全员猜拳（平局重猜），<strong>赢几个人就得几步</strong>（例：4人局2布赢2石头，出布者各获 <strong>2 步</strong>；常规步数不跨回合攒）。多人同时赢拳时，胜者再猜一次抢「第一解释权」，第一名自由挑选行动顺位。</p>
-          <div class="guide-tip">核心击杀链：同地点<strong>扒裤</strong>（无需刀，目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>造成致命伤！移动可免费强行带走同地点任意人。</div>
+          <h4>猜拳抢步 · 耗刀绝杀与血线博弈</h4>
+          <p>每回合全员猜拳（平局重猜），<strong>赢几个人就得几步</strong>（常规步数不跨回合攒）。多人同时赢拳时，胜者再猜一次抢「第一解释权」，按顺位依次走完自己全部步数。</p>
+          <p>除坚韧者（4命）、小猪（2命）、突袭者（1命）外，其余 13 位角色基础血量均为 <strong>1.5 命</strong>。同地点先<strong>扒裤</strong>（目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>（基础 1 伤，<strong>每次「咔」消耗 1 把刀</strong>，即使被闪避或护盾挡下亦消耗）。</p>
+          <div class="guide-tip">强带规则：每次移动最多强带 <strong>1 名</strong>同地点玩家；且你手里 <strong>0 刀</strong> 时无法强行带走持刀目标（持刀威慑）。</div>
         </div>
 
         <div class="guide-step" data-step="1">
           <div class="guide-step-num">02</div>
-          <h4>三层 3D 地图 · 呼吸与神器</h4>
-          <p>地图分为<strong>天空 / 陆地 / 海洋</strong>三层。海空共用 <strong>5 回合缺氧额度</strong>（第4、5回合攻击减半且禁主动技，第5回合末未呼吸/回陆/无氧气瓶即窒息）。</p>
-          <p><strong>陆地</strong>含警局（远程三局两胜逮捕）、监狱（狱内外皆可杀典狱长越狱）、黑市（8抽3恶魔契约）、地府（阵亡后有1次复活猜拳，复活消耗1步）；<strong>海洋</strong>龙宫可全服合力锻造 <strong>8 件唯一神器</strong>（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）；<strong>天空</strong>可许愿或改写下回合血月/迷雾/雷暴天象。</p>
+          <h4>三层 3D 地图 · 升天蓄力与主场天象</h4>
+          <p><strong>天空层</strong>：在陆地任意非狱内点耗 1 步执行<strong>「☁ 升天蓄力」</strong>，本条命内即可永久 1 步直飞马厩 / 许愿池 / 天象台（持 SQ4 云梯免蓄力且可从海洋登天）。<strong>马厩</strong>空降陆地免费扒落点 1 人 1 裤（无目标则免费 +1 刀）；<strong>许愿池</strong>仅需 <strong>2 步</strong>即可发动自利神迹（含新增「神赐重整」）；<strong>天象台</strong>改写血月/迷雾/雷暴后，施法者独享下回合主场特权，且<strong>迷雾期间屏蔽所有跨地点远程锁定</strong>（施法者豁免）。</p>
+          <p><strong>陆地与海洋</strong>：海空共用 5 回合缺氧额度（海王在海洋、青蛙面罩在海洋免疫）。海洋<strong>遗迹</strong>挖掘 25% 令裤上限暴增至 10，其余 75% 保底永久 +0.5 裤上限（保底上限 4，已 ≥4 则 +0.5 当前裤子）；<strong>龙宫</strong>可全服合力锻造 8 件唯一神器。</p>
         </div>
 
         <div class="guide-step" data-step="2">
           <div class="guide-step-num">03</div>
-          <h4>16 角色联动 · 通缉与坍塌</h4>
-          <p>16 位角色分为<strong>刺客 / 控场 / 诡计 / 生存</strong>四系，从量子隐身预判、寄生爆体、提线强控到结界隔绝，每位角色都能改写战局规则。</p>
-          <p>持 ≥2 龙宫神器或击杀 ≥2 人将触发<strong>全服通缉</strong>（击杀通缉犯回 +1 命且下回合保底 1 步）；第 10 回合起地图每回合永久坍塌 1 个非出生点，逼入最终血战！</p>
+          <h4>16 角色机制 · 通缉与坍塌预警</h4>
+          <p>16 位角色各具战术特色：<strong>突袭者</strong>同房多名 0 裤目标可「刃锋分伤」；<strong>忍者</strong>开局及复活后须先 1 步「弹刃」解锁攻击；<strong>普通人</strong>自带 1 层护盾且每回合首进黑市 0 步；<strong>收尸人</strong>可远程烧尸/封魂回血且每 2 刀增伤 +0.5；<strong>寄生者</strong> 0 步破体且破体咔 +0.5 伤；<strong>逆转者</strong>平局扣 1 层势。</p>
+          <p>持 ≥2 龙宫神器或击杀 ≥2 人将触发<strong>全服通缉</strong>；第 10 回合起地图每回合永久坍塌 1 个非出生点，<strong>提前 1 回合红框预告</strong>，正式坍塌时滞留者先受 <strong>-0.5 命不可闪避塌方伤害</strong>再逃生！</p>
         </div>
       </div>
 
@@ -408,7 +424,7 @@
           <input id="cfg-bounty-kills" class="pk-input pk-input--sm" type="number" min="1" max="6" value="2" />
         </div>
         <div class="config-item">
-          <label for="cfg-ai-delay">AI 决策延迟 (ms)</label>
+          <label for="cfg-ai-delay">AI 基础决策延迟 (ms)</label>
           <input id="cfg-ai-delay" class="pk-input pk-input--sm" type="number" min="400" max="3500" step="100" value="1600" />
         </div>
 

@@ -38,8 +38,23 @@
     SQ1: { id: 'SQ1', name: 'SQ1 大刀', short: '大刀', stepsNeed: 2, desc: '攻击伤害与扒裤效果翻倍' },
     SQ2: { id: 'SQ2', name: 'SQ2 利刃', short: '利刃', stepsNeed: 1, desc: '1步突进移动到任意可达点并免费攻击1次' },
     SQ3: { id: 'SQ3', name: 'SQ3 猪脸', short: '猪脸', stepsNeed: 3, desc: '任何玩家对你互动（含远程）前须先贴脸花1步捏脸（按每张猪脸实例独立记录）' },
-    SQ4: { id: 'SQ4', name: 'SQ4 云梯', short: '云梯', stepsNeed: 2, desc: '随时1步登天（天二），或在天空1步无伤降落任意非狱内地点' }
+    SQ4: { id: 'SQ4', name: 'SQ4 云梯', short: '云梯', stepsNeed: 2, desc: '随时1步登天（天二），或在天空1步无伤降落任意非狱内地点' },
+    SQ5: { id: 'SQ5', name: 'SQ5 吸铁石', short: '吸铁石', stepsNeed: 1, desc: '耗1步远程吸走任意1名存活玩家手中的1把刀（受猪脸与结界限制）' },
+    SQ6: { id: 'SQ6', name: 'SQ6 钩爪', short: '钩爪', stepsNeed: 2, desc: '耗1步将任意非狱内非结界的1名存活玩家跨层强拉至你所在地点（受猪脸限制，不触发带人）' },
+    SQ7: { id: 'SQ7', name: 'SQ7 沙漏', short: '沙漏', stepsNeed: 2, desc: '主动结束行动时，可将本回合剩余步数最多储存1步带入下回合（下回合输拳也能动，赢拳叠加）' },
+    SQ8: { id: 'SQ8', name: 'SQ8 铁裤', short: '铁裤', stepsNeed: 3, desc: '每次受扒裤最多扣0.5裤（无视大刀双倍）；每回合开始若为0裤自动生成0.5临时铁裤' }
   };
+
+  const ALL_SQ_IDS = Object.keys(ARTIFACTS);
+
+  function createInitialArtifacts() {
+    const map = {};
+    ALL_SQ_IDS.forEach((id) => {
+      map[id] = { id, progress: 0, ownerId: null, droppedAt: null, destroyed: false };
+      if (id === 'SQ3') map[id].instanceId = 1;
+    });
+    return map;
+  }
 
   const WISH_OPTIONS = [
     { id: 'revive', name: '冥界召回', desc: '复活1名阵亡玩家（1裤1命，位于地府）' },
@@ -67,7 +82,7 @@
     { id: 'tough', num: '04', name: '坚韧者', arch: 'survival', archName: '生存', hp: 4, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '以绝对血量压制全场，无主动技（黑市过载改为获得护盾）。', passiveName: '钢铁躯体', passiveDesc: '初始拥有高达 4 命，容错率冠绝全场。', brief: '4 命肉盾，硬抗致命斩杀' },
     { id: 'chili', num: '05', name: '辛红辣椒', arch: 'control', archName: '控场', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '电击麻痹', activeDesc: '耗1步远程电击任意1名存活玩家，使其下回合无论获得多少步都无法行动。', passiveName: '高压电弧', passiveDesc: '远程强硬封锁关键目标节奏，打断神器与复活推进。', brief: '远程电击，下回合强制麻痹' },
     { id: 'watcher', num: '06', name: '监视者', arch: 'control', archName: '控场', hp: 1, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '远程抓捕', activeDesc: '耗1步随时随地（含狱内）对任意存活玩家发起三局两胜逮捕猜拳，败者入狱。', passiveName: '全境法眼', passiveDesc: '不受警局位置限制，狱内亦可反手拉人陪葬。', brief: '全图远程三局两胜逮捕入狱' },
-    { id: 'aquaman', num: '07', name: '海王', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '依靠被动水遁掌控海洋龙宫资源与无解越狱能力。', passiveName: '深海潜行', passiveDesc: '随时随地（含狱内，无代价，被结界封锁时除外）可耗1步直接下海；从海洋上岸时固定回到码头。', brief: '任意点/狱内 1 步自由下海' },
+    { id: 'aquaman', num: '07', name: '海王', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '深海潜行', activeDesc: '耗1步并消耗1次技能，随时随地（含狱内，被结界封锁时除外）单人直接潜入海洋层任意可达地点。', passiveName: '潮汐归港', passiveDesc: '在码头走常规移动下海不消耗技能次数；从海洋上岸时固定回到码头。', brief: '2次主动随时/狱内下海 + 码头归港' },
     { id: 'piggy', num: '08', name: '小猪', arch: 'trick', archName: '诡计', hp: 1, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 1, activeCost: 0, activeName: '顺手牵刀', activeDesc: '开启后，在你攻击（「咔」/利刃突进）同地点目标时免费抢走对方 1 把刀。', passiveName: '天生猪脸', passiveDesc: '开局自带独立 SQ3 猪脸（不占龙宫且死亡不掉落，地府重生生成全新猪脸实例需重捏）。', brief: '自带独立猪脸 + 攻击免费抢刀' },
     { id: 'ninja', num: '09', name: '忍者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '瞬身连撞', activeDesc: '斩杀任意单位后，可消耗1次技能免费向距离1（1步可达）的另1单位突进撞击，造成1伤（先扣裤，0裤扣命）；若撞死可再次消耗次数连撞！', passiveName: '自带利刃', passiveDesc: '开局自带独立 SQ2 利刃（不占龙宫且死亡不掉落），高机动无裤刺客。', brief: '自带 SQ2 利刃 + 斩杀瞬身连撞' },
     { id: 'puppeteer', num: '10', name: '操偶师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '提线木偶', activeDesc: '耗1步强控同层级1名存活玩家，令其立刻执行1次基础动作（单人移动 / 穿裤 / 拔刀 / 同地点扒裤）。', passiveName: '丝线操纵', passiveDesc: '可借敌之手扒裤、把敌人拉出掩体或送进绝境。', brief: '远程强控同层目标执行动作' },
@@ -96,7 +111,7 @@
 
     { id: 'ocean_aquarium', name: '水族馆', layer: 'ocean', x: 24, y: 48, kind: 'aquarium', collapsible: true, desc: '耗 1 步佩戴青蛙面罩（永久水下呼吸，代价：裤清零且上限永久 0，HP 变为 0.5）。' },
     { id: 'ocean_ruins', name: '遗迹', layer: 'ocean', x: 54, y: 66, kind: 'ruins', collapsible: true, desc: '受击享 50% 闪避；耗 1 步挖掘（25% 成功令裤上限暴增至 10）。' },
-    { id: 'ocean_palace', name: '龙宫', layer: 'ocean', x: 78, y: 38, kind: 'palace', collapsible: true, desc: '全服共享进度锻造 4 件唯一神器（SQ1大刀 / SQ2利刃 / SQ3猪脸 / SQ4云梯）。' }
+    { id: 'ocean_palace', name: '龙宫', layer: 'ocean', x: 78, y: 38, kind: 'palace', collapsible: true, desc: '全服共享进度锻造 8 件唯一神器（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）。' }
   ];
 
   const HOME_SLOTS = [
@@ -131,12 +146,7 @@
       players: [],
       nodes: {},
       warden: { hp: 1, pants: 3, maxPants: 3, respawnCount: 0 },
-      artifacts: {
-        SQ1: { id: 'SQ1', progress: 0, ownerId: null, droppedAt: null },
-        SQ2: { id: 'SQ2', progress: 0, ownerId: null, droppedAt: null },
-        SQ3: { id: 'SQ3', progress: 0, ownerId: null, droppedAt: null, instanceId: 1 },
-        SQ4: { id: 'SQ4', progress: 0, ownerId: null, droppedAt: null }
-      },
+      artifacts: createInitialArtifacts(),
       lastActiveSkill: null,
       links: [],
       rps: null,
@@ -168,6 +178,7 @@
     guideStep: 0,
     subPanelState: null,
     mobileTab: 'map',
+    mobileLobbyTab: 'room',
     unreadLogCount: 0,
     lastLogCount: 0,
     pendingTimers: []
@@ -199,6 +210,8 @@
   function getSelfPlayer() { return state.players.find((p) => p.id === state.selfId) || null; }
   function getPlayer(id) { return state.players.find((p) => p.id === id) || null; }
   function isHostAuthority() { return state.mode === 'solo' || state.mode === 'host'; }
+  function notifyPlayer(playerId, msg, level = 'warn') { Net.sendToastTo(playerId, msg, level); }
+  function isVisibleAlive(p) { return Boolean(p && p.status === 'alive' && !p.stealth?.active); }
 
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -279,7 +292,7 @@
       collapseEnabled: g('opt-collapse') ? g('opt-collapse').checked : true,
       collapseStartTurn: clamp(Number(g('cfg-collapse-turn')?.value) || 10, 3, 30),
       bountyEnabled: g('opt-bounty') ? g('opt-bounty').checked : true,
-      bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 4),
+      bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 8),
       bountyKills: clamp(Number(g('cfg-bounty-kills')?.value) || 2, 1, 6),
       oxygenMax: clamp(Number(g('cfg-oxygen-max')?.value) || 5, 3, 10),
       aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 1600, 400, 3500),
@@ -655,6 +668,7 @@
       if (!msg || typeof msg !== 'object') return;
       if (msg.type === 'WELCOME' && msg.assignedId) { state.selfId = msg.assignedId; return; }
       if (msg.type === 'ERROR') { window.VFX?.toast(msg.message || '连接被拒绝', 'danger'); return; }
+      if (msg.type === 'TOAST') { window.VFX?.toast(msg.msg || '', msg.level || 'info'); return; }
       if (msg.type === 'STATE' && msg.snapshot) {
         const prevSelfId = state.selfId;
         const prevMode = state.mode;
@@ -697,6 +711,21 @@
         if (state.phase === 'gameover' && prevPhase !== 'gameover') {
           UI.openModal?.('gameover');
         }
+      }
+    }
+
+    function sendToastTo(playerId, msg, level = 'warn') {
+      if (!msg) return;
+      if (playerId === state.selfId) {
+        window.VFX?.toast(msg, level);
+        return;
+      }
+      if (state.mode !== 'host') return;
+      const target = getPlayer(playerId) || state.lobbyPlayers.find((p) => p.id === playerId);
+      if (!target || target.isAI || !target.peerId) return;
+      const conn = clientConns.get(target.peerId);
+      if (conn && conn.open) {
+        try { conn.send({ type: 'TOAST', msg, level }); } catch (_) {}
       }
     }
 
@@ -812,7 +841,7 @@
       UI.renderLobby?.();
     }
 
-    return { createRoom, joinRoom, startSolo, teardownPeer, broadcastState, sendRoleSelect, sendIntent, sendChat, sendEmoji, applyHostConfig, copyInviteLink, addLobbyAi, removeLobbySeat };
+    return { createRoom, joinRoom, startSolo, teardownPeer, broadcastState, sendToastTo, sendRoleSelect, sendIntent, sendChat, sendEmoji, applyHostConfig, copyInviteLink, addLobbyAi, removeLobbySeat };
   })();
 
   // ========================================================================
@@ -927,7 +956,7 @@
   }
 
   function countPalaceArtifacts(player) {
-    return ['SQ1', 'SQ2', 'SQ3', 'SQ4'].filter((id) => state.artifacts[id].ownerId === player.id).length;
+    return ALL_SQ_IDS.filter((id) => state.artifacts[id]?.ownerId === player.id).length;
   }
 
   function getPigFaceInstances(target) {
@@ -980,9 +1009,6 @@
     );
 
     if (cur.kind === 'prison_in') {
-      if (player.roleId === 'aquaman' && !opts.ignoreAquaman) {
-        return allNodes.filter((n) => n.layer === 'ocean');
-      }
       return [];
     }
 
@@ -993,7 +1019,7 @@
       allNodes.filter((n) => n.layer === 'land').forEach(add);
       const skyOne = state.nodes.sky_one;
       if (skyOne && !skyOne.collapsed && !isBarrierActive(skyOne.id)) add(skyOne);
-      if (cur.kind === 'dock' || (player.roleId === 'aquaman' && !opts.ignoreAquaman)) {
+      if (cur.kind === 'dock') {
         allNodes.filter((n) => n.layer === 'ocean').forEach(add);
       }
       if (hasSQ(player, 'SQ4') && !opts.ignoreSQ4) {
@@ -1002,8 +1028,11 @@
     } else if (cur.layer === 'ocean') {
       allNodes.filter((n) => n.layer === 'ocean').forEach(add);
       const dock = state.nodes.land_dock;
-      if (dock && !dock.collapsed && !isBarrierActive(dock.id)) add(dock);
-      else allNodes.filter((n) => n.layer === 'land').forEach(add);
+      if (dock && !dock.collapsed) {
+        if (!isBarrierActive(dock.id)) add(dock);
+      } else {
+        allNodes.filter((n) => n.layer === 'land').forEach(add);
+      }
       if (hasSQ(player, 'SQ4') && !opts.ignoreSQ4) {
         allNodes.filter((n) => n.layer === 'sky' && n.id !== 'sky_one').forEach(add);
       }
@@ -1013,19 +1042,18 @@
         const dropPool = hasSQ(player, 'SQ4') ? allNodes : allNodes.filter((n) => n.layer === 'land');
         dropPool.forEach(add);
       }
-      if (player.roleId === 'aquaman' && !opts.ignoreAquaman) {
-        allNodes.filter((n) => n.layer === 'ocean').forEach(add);
-      }
     }
 
     return Array.from(result.values());
   }
 
-  function getAlivePlayersAt(nodeId, excludeId = null) {
-    return state.players.filter((p) => p.status === 'alive' && p.location === nodeId && p.id !== excludeId);
+  function getAlivePlayersAt(nodeId, excludeId = null, { includeStealth = false } = {}) {
+    return state.players.filter((p) =>
+      p.status === 'alive' && p.location === nodeId && p.id !== excludeId && (includeStealth || !p.stealth?.active)
+    );
   }
 
-  function syncParasites(host) {
+  function syncParasites(host, prevLayer = null) {
     state.players.forEach((p) => {
       if (p.status === 'alive' && p.parasiteHostId === host.id) {
         p.location = host.location;
@@ -1033,6 +1061,9 @@
         if (node && node.layer === 'land') {
           p.oxygenTurns = 0;
           p.enteredNonLandTurn = 0;
+        } else if (prevLayer === 'land') {
+          p.oxygenTurns = 0;
+          p.enteredNonLandTurn = state.turn;
         }
       }
     });
@@ -1064,13 +1095,13 @@
       player.oxygenTurns = 0;
       player.enteredNonLandTurn = state.turn;
     }
-    syncParasites(player);
+    syncParasites(player, prevLayer);
 
     const carriedNames = [];
     carryIds.forEach((cid) => {
       const t = getPlayer(cid);
-      if (t && t.status === 'alive' && t.id !== player.id && t.location === prevNode?.id) {
-        if (t.parasiteHostId === player.id) return;
+      if (t && isVisibleAlive(t) && t.id !== player.id && t.location === prevNode?.id) {
+        if (t.parasiteHostId) return;
         t.location = destId;
         if (destNode.layer === 'land') {
           t.oxygenTurns = 0;
@@ -1079,7 +1110,7 @@
           t.oxygenTurns = 0;
           t.enteredNonLandTurn = state.turn;
         }
-        syncParasites(t);
+        syncParasites(t, prevLayer);
         carriedNames.push(t.name);
       }
     });
@@ -1140,8 +1171,12 @@
   function applyPantsLoss(target, amount, reason = '', visited = new Set()) {
     if (!target || target.status !== 'alive' || amount <= 0) return 0;
     visited.add(target.id);
+    let effAmount = amount;
+    if (hasSQ(target, 'SQ8') && reason !== '过载代价') {
+      effAmount = Math.min(effAmount, 0.5);
+    }
     const before = target.pants;
-    target.pants = Math.max(0, roundHalf(target.pants - amount));
+    target.pants = Math.max(0, roundHalf(target.pants - effAmount));
     const actual = roundHalf(before - target.pants);
     if (actual > 0) {
       emitFx('float', { nodeId: target.location, text: `-${actual}👖`, kind: 'pants' });
@@ -1216,6 +1251,7 @@
     victim.bomb = null;
     victim.stealth = null;
     victim.paralyzed = false;
+    victim.savedSteps = 0;
 
     const deathNodeId = victim.location;
     const deathNode = getNode(deathNodeId);
@@ -1224,7 +1260,7 @@
     victim.parasiteHostId = null;
 
     const dropped = [];
-    ['SQ1', 'SQ2', 'SQ3', 'SQ4'].forEach((sqId) => {
+    ALL_SQ_IDS.forEach((sqId) => {
       if (state.artifacts[sqId].ownerId === victim.id) {
         state.artifacts[sqId].ownerId = null;
         state.artifacts[sqId].droppedAt = deathNodeId;
@@ -1275,7 +1311,7 @@
     syncMoodFromState();
   }
 
-  function revivePlayerAtUnderworld(p, { viaWish = false } = {}) {
+  function revivePlayerAtUnderworld(p, { viaWish = false, remainingSteps = 0 } = {}) {
     const role = ROLE_MAP[p.roleId];
     const spawnId = getSafeReviveNodeId(p);
     p.status = 'alive';
@@ -1287,6 +1323,9 @@
     p.antiSuffocate = 0;
     p.bomb = null;
     p.paralyzed = false;
+    p.paralyzedNextTurn = false;
+    p.guaranteedStepNextTurn = false;
+    p.savedSteps = 0;
     p.stealth = null;
     p.parasiteHostId = null;
     p.wanted = false;
@@ -1302,12 +1341,17 @@
       p.maxPants = role.maxPants;
       p.knives = role.knives;
       p.activeCharges = role.activeMax;
+      p.momentum = 0;
+      p.shield = 0;
+      p.wishSteps = 0;
+      p.piggyStealArmed = false;
       p.pigFaceGen += 1;
       p.pinchedFaces = [];
       p.reviveUsed = true;
     }
 
-    addLog(`🔥 ${p.name} 在【${getNode(spawnId)?.name || '地府'}】重返人间！`, 'system');
+    const stepNote = viaWish ? '（许愿召回）' : `（消耗1步${remainingSteps > 0 ? `，余+${remainingSteps}步` : ''}）`;
+    addLog(`🔥 ${p.name} 在【${getNode(spawnId)?.name || '地府'}】复活${stepNote}`, 'system');
     emitFx('banner', {
       kicker: 'RESURRECTION // 地府重生',
       title: `${p.name} 复活归来`,
@@ -1356,12 +1400,7 @@
       localUI.lastLogCount = 0;
 
       state.warden = { hp: 1, pants: 3, maxPants: 3, respawnCount: 0 };
-      state.artifacts = {
-        SQ1: { id: 'SQ1', progress: 0, ownerId: null, droppedAt: null },
-        SQ2: { id: 'SQ2', progress: 0, ownerId: null, droppedAt: null },
-        SQ3: { id: 'SQ3', progress: 0, ownerId: null, droppedAt: null, instanceId: 1 },
-        SQ4: { id: 'SQ4', progress: 0, ownerId: null, droppedAt: null }
-      };
+      state.artifacts = createInitialArtifacts();
 
       state.players = state.lobbyPlayers.map((lp) => {
         const role = ROLE_MAP[lp.roleId] || ROLE_MAP.normal;
@@ -1371,7 +1410,7 @@
           status: 'alive',
           hp: role.hp, pants: role.pants, maxPants: role.maxPants, knives: role.knives,
           atkMult: role.atkMult, activeCharges: role.activeMax,
-          steps: 0, deferredSteps: 0, momentum: 0, shield: 0,
+          steps: 0, deferredSteps: 0, savedSteps: 0, momentum: 0, shield: 0,
           pigFaceGen: 1, pinchedFaces: [], wishSteps: 0,
           oxygenTurns: 0, enteredNonLandTurn: 0, breathedThisTurn: false,
           oxygenTank: true, antiSuffocate: 0, frogMask: false,
@@ -1427,6 +1466,10 @@
         p.breathedThisTurn = false;
         p.paralyzed = Boolean(p.paralyzedNextTurn);
         p.paralyzedNextTurn = false;
+        if (p.status === 'alive' && hasSQ(p, 'SQ8') && p.pants < 0.5) {
+          p.pants = 0.5;
+          addLog(`🛡 ${p.name} 【铁裤】自动生成 0.5👖`, 'skill');
+        }
         if (p.status === 'alive' && p.paralyzed) {
           addLog(`⚡ ${p.name} 麻痹，本回合跳过`, 'skill');
         }
@@ -1504,7 +1547,10 @@
         const h = state.rps.choices[pid];
         const outcome = isDraw ? 'draw' : winners.includes(pid) ? 'win' : 'lose';
         let tag = outcome === 'draw' ? 'DRAW' : outcome === 'win' ? `WIN +${losersCount}步` : 'LOSE';
-        if (p?.status === 'pending_revive') tag = outcome === 'win' ? '地府复活!' : outcome === 'lose' ? '彻底死透' : '重猜';
+        if (p?.status === 'pending_revive') {
+          const rem = Math.max(0, losersCount - 1);
+          tag = outcome === 'win' ? (rem > 0 ? `复活 +${rem}步` : '复活(耗1步)') : outcome === 'lose' ? '彻底死透' : '重猜';
+        }
         return { name: p?.name || '特工', hand: h, outcome, tag };
       });
 
@@ -1533,12 +1579,15 @@
     finalizeMainRps(winnerIds, baseSteps = 1) {
       const winnerSet = new Set(winnerIds);
       const actingWinners = [];
+      const revivedThisTurn = new Set();
 
       state.rps.participants.forEach((pid) => {
         const p = getPlayer(pid);
         if (!p || p.status !== 'pending_revive') return;
         if (winnerSet.has(pid)) {
-          revivePlayerAtUnderworld(p, { viaWish: false });
+          const rem = Math.max(0, baseSteps - 1);
+          revivePlayerAtUnderworld(p, { viaWish: false, remainingSteps: rem });
+          revivedThisTurn.add(p.id);
         } else {
           p.reviveUsed = true;
           p.status = 'dead_final';
@@ -1554,8 +1603,8 @@
         const won = winnerSet.has(p.id);
 
         if (won && participated) {
-          let steps = baseSteps;
-          if (p.roleId === 'reverser' && p.momentum > 0) {
+          let steps = revivedThisTurn.has(p.id) ? Math.max(0, baseSteps - 1) : baseSteps;
+          if (!revivedThisTurn.has(p.id) && p.roleId === 'reverser' && p.momentum > 0) {
             steps += p.momentum;
             addLog(`🌀 ${p.name} 引爆${p.momentum}势 → +${steps}步`, 'skill');
             emitFx('float', { nodeId: p.location, text: `逆转 +${steps}步!`, kind: 'skill' });
@@ -1576,6 +1625,13 @@
             p.steps = 1;
             addLog(`🏆 ${p.name} 触发通缉悬赏保底，获得 1 步！`, 'system');
           }
+        }
+
+        if (p.savedSteps > 0) {
+          p.steps += p.savedSteps;
+          addLog(`⏳ ${p.name} 释放【沙漏】储存 +${p.savedSteps}步`, 'skill');
+          emitFx('float', { nodeId: p.location, text: `沙漏 +${p.savedSteps}步`, kind: 'skill' });
+          p.savedSteps = 0;
         }
 
         if (p.paralyzed && p.steps > 0) {
@@ -1778,7 +1834,7 @@
       } else if (act === 'wear_pants') {
         const cur = getNode(raider.location);
         if (state.weather === 'storm' && cur?.layer === 'land') {
-          window.VFX?.toast('雷暴天象下陆地禁穿裤！', 'warn');
+          notifyPlayer(raider.id, '雷暴天象下陆地禁穿裤！', 'warn');
           return;
         }
         raider.pants = Math.min(raider.maxPants, roundHalf(raider.pants + 1));
@@ -1789,6 +1845,10 @@
       } else if (act === 'breathe') {
         const cur = getNode(raider.location);
         if (!cur || cur.layer === 'land') return;
+        if (!hasEffectiveOxygenTank(raider) && !(cur.layer === 'ocean' && hasEffectiveFrogMask(raider))) {
+          notifyPlayer(raider.id, '氧气瓶已损坏或被抢，无法暗中呼吸！', 'danger');
+          return;
+        }
         raider.oxygenTurns = 0;
         raider.breathedThisTurn = true;
         desc = '暗中呼吸换气';
@@ -1859,7 +1919,7 @@
 
       const checkPigFaceBlock = (target) => {
         if (needsPinchPigFace(actor, target)) {
-          window.VFX?.toast(`目标【${target.name}】戴着猪脸！必须先同地点花 1 步捏脸！`, 'warn');
+          notifyPlayer(actor.id, `目标【${target.name}】戴着猪脸！必须先同地点花 1 步捏脸！`, 'warn');
           return true;
         }
         return false;
@@ -1868,7 +1928,7 @@
       if (act === 'pass_bomb') {
         if (!actor.bomb) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || target.id === actor.id) return;
+        if (!isVisibleAlive(target) || target.location !== actor.location || target.id === actor.id) return;
         if (checkPigFaceBlock(target)) return;
         target.bomb = { turnsLeft: actor.bomb.turnsLeft };
         actor.bomb = null;
@@ -1880,16 +1940,23 @@
       }
 
       if (act === 'pass') {
-        actor.steps = 0;
-        addLog(`⏭ ${actor.name} 结束行动`, 'muted');
+        if (hasSQ(actor, 'SQ7') && actor.steps > 0) {
+          actor.savedSteps = 1;
+          actor.steps = 0;
+          addLog(`⏳ ${actor.name} 用【沙漏】储存 +1步 至下回合`, 'skill');
+          emitFx('float', { nodeId: actor.location, text: '⏳ 存1步', kind: 'skill' });
+        } else {
+          actor.steps = 0;
+          addLog(`⏭ ${actor.name} 结束行动`, 'muted');
+        }
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
       if (act === 'move') {
         if (actor.steps < 1) return;
-        if (actor.parasiteHostId) { window.VFX?.toast('寄生附身态无法普通移动，请使用「破体而出」', 'warn'); return; }
-        if (!getReachableMoveNodes(actor).some((n) => n.id === intent.destId)) { window.VFX?.toast('目标地点不可直达或被结界封锁', 'warn'); return; }
+        if (actor.parasiteHostId) { notifyPlayer(actor.id, '寄生附身态无法普通移动，请使用「破体而出」', 'warn'); return; }
+        if (!getReachableMoveNodes(actor).some((n) => n.id === intent.destId)) { notifyPlayer(actor.id, '目标地点不可直达或被结界封锁', 'warn'); return; }
         const carryIds = Array.isArray(intent.carryIds) ? intent.carryIds : [];
         for (const cid of carryIds) {
           const ct = getPlayer(cid);
@@ -1904,8 +1971,8 @@
 
       if (act === 'wear_pants') {
         if (actor.steps < 1) return;
-        if (state.weather === 'storm' && curNode?.layer === 'land') { window.VFX?.toast('雷暴天象下陆地禁止穿裤！', 'warn'); return; }
-        if (actor.pants >= actor.maxPants) { window.VFX?.toast('裤子已达上限', 'warn'); return; }
+        if (state.weather === 'storm' && curNode?.layer === 'land') { notifyPlayer(actor.id, '雷暴天象下陆地禁止穿裤！', 'warn'); return; }
+        if (actor.pants >= actor.maxPants) { notifyPlayer(actor.id, '裤子已达上限', 'warn'); return; }
         actor.steps -= 1;
         const before = actor.pants;
         actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + 1));
@@ -1931,7 +1998,7 @@
       if (act === 'steal_knife') {
         if (actor.steps < 1) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || target.knives <= 0) return;
+        if (!isVisibleAlive(target) || target.location !== actor.location || target.knives <= 0) return;
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         target.knives -= 1;
@@ -1947,7 +2014,7 @@
       if (act === 'steal_tank') {
         if (actor.steps < 1) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || !target.oxygenTank) return;
+        if (!isVisibleAlive(target) || target.location !== actor.location || !target.oxygenTank) return;
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         target.oxygenTank = false;
@@ -1961,7 +2028,7 @@
       if (act === 'pinch_pigface') {
         if (actor.steps < 1) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location) return;
+        if (!isVisibleAlive(target) || target.location !== actor.location) return;
         const keys = getPigFaceInstances(target);
         if (keys.length === 0) return;
         actor.steps -= 1;
@@ -1977,7 +2044,7 @@
         const power = hasSQ(actor, 'SQ1') ? 2 : 1;
         if (intent.targetId === 'NPC_WARDEN') {
           if (!canAttackWardenFrom(curNode)) return;
-          if (state.warden.pants <= 0) { window.VFX?.toast('典狱长已 0 裤，持刀直接「咔」！', 'warn'); return; }
+          if (state.warden.pants <= 0) { notifyPlayer(actor.id, '典狱长已 0 裤，持刀直接「咔」！', 'warn'); return; }
           actor.steps -= 1;
           const before = state.warden.pants;
           state.warden.pants = Math.max(0, roundHalf(state.warden.pants - power));
@@ -1989,7 +2056,7 @@
           return;
         }
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || target.id === actor.id) return;
+        if (!isVisibleAlive(target) || target.location !== actor.location || target.id === actor.id) return;
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         const lost = applyPantsLoss(target, power, '扒裤');
@@ -2004,15 +2071,15 @@
         const dmg = Engine.calcStabDamage(actor);
         if (intent.targetId === 'NPC_WARDEN') {
           if (!canAttackWardenFrom(curNode)) return;
-          if (state.warden.pants > 0) { window.VFX?.toast('典狱长还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
+          if (state.warden.pants > 0) { notifyPlayer(actor.id, '典狱长还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
           actor.steps -= 1;
           Engine.damageWarden(actor, dmg);
           Engine.finishCurrentActorIfDone(actor);
           return;
         }
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || target.id === actor.id) return;
-        if (target.pants > 0) { window.VFX?.toast('目标还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
+        if (!isVisibleAlive(target) || target.location !== actor.location || target.id === actor.id) return;
+        if (target.pants > 0) { notifyPlayer(actor.id, '目标还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
 
         actor.steps -= 1;
@@ -2032,7 +2099,7 @@
         let target = null;
         if (intent.targetId && intent.targetId !== 'NPC_WARDEN') {
           target = getPlayer(intent.targetId);
-          if (!target || target.status !== 'alive' || target.location !== intent.destId || target.id === actor.id) return;
+          if (!isVisibleAlive(target) || target.location !== intent.destId || target.id === actor.id) return;
           if (checkPigFaceBlock(target)) return;
         }
 
@@ -2065,10 +2132,54 @@
         return;
       }
 
+      if (act === 'sq5_magnet') {
+        if (actor.steps < 1 || !hasSQ(actor, 'SQ5')) return;
+        const target = getPlayer(intent.targetId);
+        if (!isVisibleAlive(target) || target.id === actor.id || target.knives <= 0) return;
+        if (actor.location !== target.location && (isBarrierActive(actor.location) || isBarrierActive(target.location))) {
+          notifyPlayer(actor.id, '结界内外隔绝，吸铁石无法穿透！', 'warn');
+          return;
+        }
+        if (checkPigFaceBlock(target)) return;
+        actor.steps -= 1;
+        target.knives -= 1;
+        actor.knives += 1;
+        addLog(`🧲 ${actor.name} 用【SQ5 吸铁石】隔空吸走 ${target.name} 1把刀 (+1🔪)`, 'skill');
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '吸铁石缴械', target: target.name, result: '远程夺刀 +1🔪' });
+        emitFx('float', { nodeId: target.location, text: '-1🔪 被吸走!', kind: 'pants' });
+        emitFx('float', { nodeId: actor.location, text: '+1🔪', kind: 'skill' });
+        emitFx('sfx', { name: 'knife' });
+        Engine.finishCurrentActorIfDone(actor);
+        return;
+      }
+
+      if (act === 'sq6_hook') {
+        if (actor.steps < 1 || !hasSQ(actor, 'SQ6') || actor.parasiteHostId) return;
+        if (!curNode || curNode.kind === 'prison_in' || isBarrierActive(curNode.id)) {
+          notifyPlayer(actor.id, '狱内或结界内无法使用钩爪！', 'warn');
+          return;
+        }
+        const target = getPlayer(intent.targetId);
+        if (!isVisibleAlive(target) || target.id === actor.id || target.location === actor.location) return;
+        if (target.location === 'land_prison_in' || isBarrierActive(target.location) || target.parasiteHostId) {
+          notifyPlayer(actor.id, '目标在狱内、结界内或寄生中，无法钩抓！', 'warn');
+          return;
+        }
+        if (checkPigFaceBlock(target)) return;
+        actor.steps -= 1;
+        movePlayerTo(target, actor.location, { carryIds: [], silent: true });
+        addLog(`🪝 ${actor.name} 用【SQ6 钩爪】将 ${target.name} 跨层强拉至【${curNode.name}】`, 'kill');
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '钩爪强拉', target: target.name, result: `拖入【${curNode.name}】`, mood: 'p5r' });
+        emitFx('ripple', { nodeId: actor.location, color: '#ffe600', rings: 2 });
+        emitFx('sfx', { name: 'skill' });
+        Engine.finishCurrentActorIfDone(actor);
+        return;
+      }
+
       if (act === 'breathe') {
         if (actor.steps < 1 || !curNode || curNode.layer === 'land') return;
         if (!hasEffectiveOxygenTank(actor) && !(curNode.layer === 'ocean' && hasEffectiveFrogMask(actor))) {
-          window.VFX?.toast('氧气瓶已损坏或被抢，无法在海空呼吸！', 'danger');
+          notifyPlayer(actor.id, '氧气瓶已损坏或被抢，无法在海空呼吸！', 'danger');
           return;
         }
         actor.steps -= 1;
@@ -2125,7 +2236,7 @@
         if (!raider || raider.status !== 'alive' || !raider.stealth?.active || raider.stealth.turnUsed >= state.turn) return;
         if (checkPigFaceBlock(raider)) return;
         const mode = intent.mode === 'strip' ? 'strip' : 'stab';
-        if (mode === 'stab' && actor.knives < 1) { window.VFX?.toast('预判「咔」需要持刀！', 'warn'); return; }
+        if (mode === 'stab' && actor.knives < 1) { notifyPlayer(actor.id, '预判「咔」需要持刀！', 'warn'); return; }
         actor.steps -= 1;
         raider.stealth.predictions.push({ predictorId: actor.id, loc: actor.location, mode });
         addLog(`🎯 ${actor.name} 在【${curNode?.name}】对隐身突袭者 ${raider.name} 宣告了预判${mode === 'stab' ? '斩击' : '扒裤'}！`, 'skill');
@@ -2136,9 +2247,10 @@
 
       if (act === 'police_arrest') {
         if (actor.steps < 1 || curNode?.kind !== 'police') return;
-        if (state.nodes.land_prison_out?.collapsed) { window.VFX?.toast('监狱已坍塌，无法逮捕入狱！', 'warn'); return; }
+        if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法逮捕入狱！', 'warn'); return; }
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.id === actor.id || target.location === 'land_prison_in') return;
+        if (!isVisibleAlive(target) || target.id === actor.id || target.location === 'land_prison_in') return;
+        if (isBarrierActive(target.location) || isBarrierActive(actor.location)) { notifyPlayer(actor.id, '结界隔绝，无法逮捕！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         Engine.startArrestBo3(actor, target, '警局远程逮捕');
@@ -2148,7 +2260,7 @@
       if (act === 'police_corpse') {
         if (actor.steps < 1 || curNode?.kind !== 'police') return;
         const holder = Object.values(state.nodes).find((n) => n.corpses.length > 0);
-        if (!holder) { window.VFX?.toast('场上目前没有可搬运的尸体', 'warn'); return; }
+        if (!holder) { notifyPlayer(actor.id, '场上目前没有可搬运的尸体', 'warn'); return; }
         actor.steps -= 1;
         const corpse = holder.corpses.shift();
         actor.hp = roundHalf(actor.hp + 0.5);
@@ -2160,7 +2272,7 @@
 
       if (act === 'police_surrender') {
         if (actor.steps < 1 || curNode?.kind !== 'police') return;
-        if (state.nodes.land_prison_out?.collapsed) { window.VFX?.toast('监狱已坍塌，无法自首入狱！', 'warn'); return; }
+        if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法自首入狱！', 'warn'); return; }
         actor.steps -= 1;
         sendPlayerToJail(actor, '主动自首');
         Engine.finishCurrentActorIfDone(actor);
@@ -2202,7 +2314,7 @@
         const sqId = intent.sqId;
         const art = state.artifacts[sqId];
         const meta = ARTIFACTS[sqId];
-        if (!art || !meta || art.ownerId || art.droppedAt) return;
+        if (!art || !meta || art.ownerId || art.droppedAt || art.destroyed) return;
         actor.steps -= 1;
         art.progress += 1;
         if (art.progress >= meta.stepsNeed) {
@@ -2294,7 +2406,7 @@
       }
 
       if (isHypoxic(actor)) {
-        window.VFX?.toast('缺氧状态下禁用角色主动技！', 'danger');
+        notifyPlayer(actor.id, '缺氧状态下禁用角色主动技！', 'danger');
         return;
       }
 
@@ -2324,6 +2436,10 @@
 
       if (skillRole === 'raider') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
+        if (actor.steps > 1) {
+          notifyPlayer(actor.id, `你还有 ${actor.steps} 步！请先用完多余步数，剩最后 1 步时再发动量子隐身`, 'warn');
+          return;
+        }
         actor.steps -= 1;
         actor.activeCharges -= 1;
         actor.stealth = { active: true, originLoc: actor.location, turnUsed: state.turn, predictions: [] };
@@ -2352,7 +2468,7 @@
           victims = getAlivePlayersAt(srcNode.id);
         } else {
           const target = getPlayer(intent.targetId);
-          if (!target || target.status !== 'alive') return;
+          if (!isVisibleAlive(target)) return;
           const tNode = getNode(target.location);
           if (!tNode || tNode.layer !== destNode.layer || tNode.id === destNode.id || isBarrierActive(tNode.id)) return;
           if (checkPigFaceBlock(target)) return;
@@ -2379,7 +2495,11 @@
       if (skillRole === 'chili') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.id === actor.id) return;
+        if (!isVisibleAlive(target) || target.id === actor.id) return;
+        if (actor.location !== target.location && (isBarrierActive(target.location) || isBarrierActive(actor.location))) {
+          notifyPlayer(actor.id, '结界内外隔绝，电击无法穿透！', 'warn');
+          return;
+        }
         if (checkPigFaceBlock(target)) return;
 
         actor.steps -= 1;
@@ -2396,15 +2516,37 @@
 
       if (skillRole === 'watcher') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
-        if (state.nodes.land_prison_out?.collapsed) { window.VFX?.toast('监狱已坍塌，无法抓捕入狱！', 'warn'); return; }
+        if (state.nodes.land_prison_out?.collapsed) { notifyPlayer(actor.id, '监狱已坍塌，无法抓捕入狱！', 'warn'); return; }
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.id === actor.id || target.location === 'land_prison_in') return;
+        if (!isVisibleAlive(target) || target.id === actor.id || target.location === 'land_prison_in') return;
+        if (isBarrierActive(target.location)) { notifyPlayer(actor.id, '目标处于结界保护中，无法抓捕！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
 
         actor.steps -= 1;
         actor.activeCharges -= 1;
         recordLastActive('watcher', '远程抓捕');
         Engine.startArrestBo3(actor, target, '监视者远程抓捕');
+        return;
+      }
+
+      if (skillRole === 'aquaman') {
+        if (actor.steps < 1 || actor.activeCharges < 1) return;
+        if (actor.parasiteHostId) { notifyPlayer(actor.id, '寄生附身态无法发动深海潜行！', 'warn'); return; }
+        if (isBarrierActive(actor.location)) { notifyPlayer(actor.id, '当前地点被结界封锁，无法潜入海洋！', 'warn'); return; }
+        const destNode = getNode(intent.nodeId);
+        if (!destNode || destNode.collapsed || destNode.layer !== 'ocean' || destNode.id === actor.location || isBarrierActive(destNode.id)) {
+          notifyPlayer(actor.id, '请选择有效的海洋层地点！', 'warn');
+          return;
+        }
+        actor.steps -= 1;
+        actor.activeCharges -= 1;
+        recordLastActive('aquaman', '深海潜行');
+        movePlayerTo(actor, destNode.id, { carryIds: [], silent: true });
+        addLog(`🌊 ${actor.name} 发动【深海潜行】潜入【${destNode.name}】（余${actor.activeCharges}次）`, 'skill');
+        emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '深海潜行', target: destNode.name, result: `直潜海洋（剩${actor.activeCharges}次）` });
+        emitFx('ripple', { nodeId: destNode.id, color: '#00d4ff', rings: 2 });
+        emitFx('sfx', { name: 'skill' });
+        Engine.finishCurrentActorIfDone(actor);
         return;
       }
 
@@ -2426,7 +2568,7 @@
       if (skillRole === 'ninja' && isMirrorCopy) {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         if (Engine.getNinjaChainTargets(actor).length === 0) {
-          window.VFX?.toast('距离 1 内暂无可撞击目标！', 'warn');
+          notifyPlayer(actor.id, '距离 1 内暂无可撞击目标！', 'warn');
           return;
         }
         actor.steps -= 1;
@@ -2439,21 +2581,25 @@
       if (skillRole === 'puppeteer') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.id === actor.id) return;
+        if (!isVisibleAlive(target) || target.id === actor.id) return;
+        if (actor.location !== target.location && (isBarrierActive(target.location) || isBarrierActive(actor.location))) {
+          notifyPlayer(actor.id, '结界内外隔绝，提线木偶无法操控！', 'warn');
+          return;
+        }
         const aNode = getNode(actor.location);
         const tNode = getNode(target.location);
-        if (!aNode || !tNode || aNode.layer !== tNode.layer) { window.VFX?.toast('提线木偶只能操控同层级玩家！', 'warn'); return; }
+        if (!aNode || !tNode || aNode.layer !== tNode.layer) { notifyPlayer(actor.id, '提线木偶只能操控同层级玩家！', 'warn'); return; }
         if (checkPigFaceBlock(target)) return;
 
         const cmd = intent.puppetAction;
         let resultText = '';
         if (cmd === 'move') {
-          if (target.parasiteHostId) { window.VFX?.toast('目标正处于寄生附身态，无法强制移动！', 'warn'); return; }
-          if (!getReachableMoveNodes(target).some((n) => n.id === intent.destId)) { window.VFX?.toast('木偶无法移动到该地点', 'warn'); return; }
+          if (target.parasiteHostId) { notifyPlayer(actor.id, '目标正处于寄生附身态，无法强制移动！', 'warn'); return; }
+          if (!getReachableMoveNodes(target).some((n) => n.id === intent.destId)) { notifyPlayer(actor.id, '木偶无法移动到该地点', 'warn'); return; }
           movePlayerTo(target, intent.destId, { carryIds: [], silent: true });
           resultText = `被迫移动至【${getNode(intent.destId)?.name}】`;
         } else if (cmd === 'wear_pants') {
-          if (state.weather === 'storm' && tNode.layer === 'land') { window.VFX?.toast('雷暴陆地禁穿裤', 'warn'); return; }
+          if (state.weather === 'storm' && tNode.layer === 'land') { notifyPlayer(actor.id, '雷暴陆地禁穿裤', 'warn'); return; }
           target.pants = Math.min(target.maxPants, roundHalf(target.pants + 1));
           resultText = `被迫穿裤（${target.pants}/${target.maxPants}）`;
         } else if (cmd === 'draw_knife') {
@@ -2462,7 +2608,7 @@
         } else if (cmd === 'strip_pants') {
           const subVictim = getPlayer(intent.stripVictimId);
           if (!subVictim || subVictim.status !== 'alive' || subVictim.location !== target.location || subVictim.id === target.id) return;
-          if (needsPinchPigFace(target, subVictim)) { window.VFX?.toast(`木偶尚未捏过 ${subVictim.name} 的猪脸！`, 'warn'); return; }
+          if (needsPinchPigFace(target, subVictim)) { notifyPlayer(actor.id, `木偶尚未捏过 ${subVictim.name} 的猪脸！`, 'warn'); return; }
           const lost = applyPantsLoss(subVictim, hasSQ(target, 'SQ1') ? 2 : 1, '提线扒裤');
           resultText = `被迫扒掉 ${subVictim.name} ${lost} 裤`;
         } else {
@@ -2482,8 +2628,8 @@
       if (skillRole === 'parasite') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const host = getPlayer(intent.targetId);
-        if (!host || host.status !== 'alive' || host.location !== actor.location || host.id === actor.id) return;
-        if (host.parasiteHostId === actor.id) { window.VFX?.toast('对方正寄生在你体内，不能互相嵌套寄生！', 'warn'); return; }
+        if (!isVisibleAlive(host) || host.location !== actor.location || host.id === actor.id) return;
+        if (host.parasiteHostId === actor.id) { notifyPlayer(actor.id, '对方正寄生在你体内，不能互相嵌套寄生！', 'warn'); return; }
         if (checkPigFaceBlock(host)) return;
 
         actor.steps -= 1;
@@ -2518,7 +2664,7 @@
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const a = getPlayer(intent.targetAId);
         const b = getPlayer(intent.targetBId);
-        if (!a || !b || a.id === b.id || a.status !== 'alive' || b.status !== 'alive') return;
+        if (!isVisibleAlive(a) || !isVisibleAlive(b) || a.id === b.id) return;
         if (checkPigFaceBlock(a) || checkPigFaceBlock(b)) return;
 
         actor.steps -= 1;
@@ -2714,12 +2860,12 @@
         const cid = intent.contractId;
         if (!pa.contracts.includes(cid)) return;
         const target = intent.targetId ? getPlayer(intent.targetId) : null;
-        if ((cid === 'bm_swap_pants' || cid === 'bm_bounty_strip') && (!target || target.status !== 'alive' || target.id === actor.id)) {
-          window.VFX?.toast('该契约需要指定 1 名存活目标', 'warn');
+        if ((cid === 'bm_swap_pants' || cid === 'bm_bounty_strip') && (!isVisibleAlive(target) || target.id === actor.id)) {
+          notifyPlayer(actor.id, '该契约需要指定 1 名存活目标', 'warn');
           return;
         }
         if (target && needsPinchPigFace(actor, target)) {
-          window.VFX?.toast(`目标 ${target.name} 戴着猪脸，请先捏脸或改选其他契约！`, 'warn');
+          notifyPlayer(actor.id, `目标 ${target.name} 戴着猪脸，请先捏脸或改选其他契约！`, 'warn');
           return;
         }
         state.pendingAction = null;
@@ -2737,7 +2883,8 @@
         } else if (w === 'swap') {
           const p1 = getPlayer(intent.targetAId);
           const p2 = getPlayer(intent.targetBId);
-          if (!p1 || !p2 || p1.id === p2.id || p1.status !== 'alive' || p2.status !== 'alive') return;
+          if (!isVisibleAlive(p1) || !isVisibleAlive(p2) || p1.id === p2.id) return;
+          if (isBarrierActive(p1.location) || isBarrierActive(p2.location)) { notifyPlayer(actor.id, '结界内玩家无法被空间置换！', 'warn'); return; }
           const l1 = p1.location;
           const l2 = p2.location;
           movePlayerTo(p1, l2, { silent: true });
@@ -2754,7 +2901,8 @@
           addLog('🌠 许愿池【抽干氧源】：所有海/空玩家呼吸额度 -1！', 'system');
         } else if (w === 'jail') {
           const t = getPlayer(intent.targetId);
-          if (!t || t.status !== 'alive') return;
+          if (!isVisibleAlive(t)) return;
+          if (isBarrierActive(t.location)) { notifyPlayer(actor.id, '目标处于结界保护中，无法强送入狱！', 'warn'); return; }
           sendPlayerToJail(t, '遭许愿池天降法槌');
         } else if (w === 'disarm') {
           state.players.forEach((p) => { p.knives = 0; });
@@ -2829,7 +2977,7 @@
 
         case 'bm_sacrifice': {
           actor.knives += 2;
-          const unfinished = ['SQ1', 'SQ2', 'SQ3', 'SQ4'].filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt);
+          const unfinished = ALL_SQ_IDS.filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
           if (unfinished.length > 0) {
             const pick = unfinished[Math.floor(Math.random() * unfinished.length)];
             const art = state.artifacts[pick];
@@ -2902,7 +3050,7 @@
 
       // 1. 天一坠落（被结界封锁时无法穿出结界）
       state.players.forEach((p) => {
-        if (p.status !== 'alive' || p.location !== 'sky_one' || isBarrierActive('sky_one')) return;
+        if (p.status !== 'alive' || p.parasiteHostId || p.location !== 'sky_one' || isBarrierActive('sky_one')) return;
         const dropPool = Object.values(state.nodes).filter(
           (n) => !n.collapsed && n.layer !== 'sky' && n.kind !== 'dock' && n.kind !== 'prison_in' && !isBarrierActive(n.id)
         );
@@ -2969,6 +3117,14 @@
           victimNode.collapsed = true;
           victimNode.barrierUntilTurn = 0;
           addLog(`🌋 【${victimNode.name}】永久坍塌！`, 'system');
+          if (victimNode.droppedArtifacts.length > 0) {
+            victimNode.droppedArtifacts.forEach((sqId) => {
+              state.artifacts[sqId].droppedAt = null;
+              state.artifacts[sqId].destroyed = true;
+              addLog(`💥 【${ARTIFACTS[sqId].name}】随【${victimNode.name}】毁灭消失！`, 'kill');
+            });
+            victimNode.droppedArtifacts = [];
+          }
           emitFx('banner', { kicker: `COLLAPSE // TURN ${state.turn}`, title: `${victimNode.name} 永久坍塌`, sub: '战区持续收缩，绝死对决逼近！', mood: 'p5r', durationMs: 2150 });
           emitFx('sfx', { name: 'collapse' });
 
@@ -3129,7 +3285,7 @@
       const curNode = getNode(actor.location);
       const enemiesHere = getAlivePlayersAt(actor.location, actor.id);
       const validHere = enemiesHere.filter((e) => !needsPinchPigFace(actor, e));
-      const allAliveEnemies = state.players.filter((p) => p.status === 'alive' && p.id !== actor.id);
+      const allAliveEnemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== actor.id);
       const moves = getReachableMoveNodes(actor);
 
       if (actor.bomb && validHere.length > 0) { Engine.executePlayerAction(actor.id, { action: 'pass_bomb', targetId: validHere[0].id }); return; }
@@ -3200,11 +3356,31 @@
         }
       }
 
+      if (hasSQ(actor, 'SQ5') && actor.knives === 0) {
+        const armed = allAliveEnemies.find((e) => e.knives > 0 && !needsPinchPigFace(actor, e) && (e.location === actor.location || (!isBarrierActive(actor.location) && !isBarrierActive(e.location))));
+        if (armed) { Engine.executePlayerAction(actor.id, { action: 'sq5_magnet', targetId: armed.id }); return; }
+      }
+      if (hasSQ(actor, 'SQ6') && actor.steps >= 2 && actor.knives >= 1 && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) {
+        const hookable = allAliveEnemies.find((e) => e.location !== actor.location && e.location !== 'land_prison_in' && !e.parasiteHostId && !isBarrierActive(e.location) && !needsPinchPigFace(actor, e) && e.pants <= 1);
+        if (hookable) { Engine.executePlayerAction(actor.id, { action: 'sq6_hook', targetId: hookable.id }); return; }
+      }
+
+      if (actor.roleId === 'aquaman' && curNode?.kind === 'prison_in' && actor.activeCharges > 0 && !isHypoxic(actor) && !isBarrierActive(actor.location)) {
+        const oceanDests = Object.values(state.nodes).filter((n) => n.layer === 'ocean' && !n.collapsed && !isBarrierActive(n.id));
+        if (oceanDests.length > 0) {
+          Engine.executePlayerAction(actor.id, { action: 'use_skill', nodeId: oceanDests[Math.floor(Math.random() * oceanDests.length)].id });
+          return;
+        }
+      }
+
       if (actor.activeCharges > 0 && !isHypoxic(actor) && Math.random() < 0.45) {
         const validRemote = allAliveEnemies.filter((e) => !needsPinchPigFace(actor, e));
-        if (actor.roleId === 'chili' && validRemote.length > 0) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: validRemote[0].id }); return; }
+        if (actor.roleId === 'chili' && validRemote.length > 0) {
+          const zappable = validRemote.find((e) => e.location === actor.location || (!isBarrierActive(actor.location) && !isBarrierActive(e.location)));
+          if (zappable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: zappable.id }); return; }
+        }
         if (actor.roleId === 'watcher' && !state.nodes.land_prison_out?.collapsed) {
-          const arrestable = validRemote.find((e) => e.location !== 'land_prison_in');
+          const arrestable = validRemote.find((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
           if (arrestable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: arrestable.id }); return; }
         }
         if (actor.roleId === 'curser' && validRemote.length >= 2) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetAId: validRemote[0].id, targetBId: validRemote[1].id }); return; }
@@ -3212,7 +3388,7 @@
           const revivable = state.players.find((p) => p.status === 'pending_revive');
           if (revivable) { Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: revivable.id }); return; }
         }
-        if (actor.roleId === 'raider' && !actor.stealth) { Engine.executePlayerAction(actor.id, { action: 'use_skill' }); return; }
+        if (actor.roleId === 'raider' && !actor.stealth && actor.steps === 1) { Engine.executePlayerAction(actor.id, { action: 'use_skill' }); return; }
         if (actor.roleId === 'barrier' && validRemote.length > 0) {
           const bn = getNode(validRemote[0].location);
           if (bn && bn.kind !== 'prison_in' && !bn.collapsed) { Engine.executePlayerAction(actor.id, { action: 'use_skill', nodeId: bn.id }); return; }
@@ -3221,7 +3397,7 @@
       }
 
       if (curNode?.kind === 'palace') {
-        const forgeable = ['SQ1', 'SQ2', 'SQ3', 'SQ4'].find((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt);
+        const forgeable = ALL_SQ_IDS.find((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
         if (forgeable) { Engine.executePlayerAction(actor.id, { action: 'forge_artifact', sqId: forgeable }); return; }
       }
       if (curNode?.kind === 'blackmarket' && Math.random() < 0.65) { Engine.executePlayerAction(actor.id, { action: 'blackmarket_draw' }); return; }
@@ -3431,6 +3607,8 @@
       `).join('');
 
       const cur = ROLE_MAP[localUI.selectedRoleId] || ROLES[0];
+      const mRoleLbl = document.getElementById('mobile-lobby-role-name');
+      if (mRoleLbl) mRoleLbl.textContent = cur.name;
       detail.innerHTML = `
         <div class="role-detail-head">
           <span class="role-arch-tag arch-${cur.arch}">${cur.num} // ${cur.archName}</span>
@@ -3483,17 +3661,19 @@
     renderArtifactsBar() {
       const bar = document.getElementById('hud-artifacts-bar');
       if (!bar) return;
-      bar.innerHTML = ['SQ1', 'SQ2', 'SQ3', 'SQ4'].map((id) => {
+      bar.innerHTML = ALL_SQ_IDS.map((id) => {
         const a = state.artifacts[id];
         const m = ARTIFACTS[id];
         const owner = a.ownerId ? getPlayer(a.ownerId) : null;
         const dropNode = a.droppedAt ? getNode(a.droppedAt) : null;
-        const cls = owner ? 'is-owned' : dropNode ? 'is-dropped' : '';
-        const rightHtml = owner
-          ? `<span>👑 ${escapeHtml(owner.name)}</span>`
-          : dropNode
-            ? `<span>📍 掉落:${escapeHtml(dropNode.name)}</span>`
-            : `<span class="artifact-pips">${Array.from({ length: m.stepsNeed }, (_, i) => `<span class="artifact-pip ${i < a.progress ? 'is-filled' : ''}"></span>`).join('')}</span>`;
+        const cls = a.destroyed ? 'is-destroyed' : owner ? 'is-owned' : dropNode ? 'is-dropped' : '';
+        const rightHtml = a.destroyed
+          ? '<span>💥 已毁</span>'
+          : owner
+            ? `<span>👑 ${escapeHtml(owner.name)}</span>`
+            : dropNode
+              ? `<span>📍 ${escapeHtml(dropNode.name)}</span>`
+              : `<span class="artifact-pips">${Array.from({ length: m.stepsNeed }, (_, i) => `<span class="artifact-pip ${i < a.progress ? 'is-filled' : ''}"></span>`).join('')}</span>`;
         return `<div class="artifact-pill ${cls}" title="${escapeHtml(m.desc)}"><span>${escapeHtml(m.name)}</span>${rightHtml}</div>`;
       }).join('');
     },
@@ -3573,7 +3753,8 @@
         if (p.roleId === 'reverser' && p.momentum > 0) flags.push(`<span class="flag-chip flag-chip--buff">势${p.momentum}/2</span>`);
         if (p.parasiteHostId) flags.push(`<span class="flag-chip flag-chip--debuff">寄生:${escapeHtml(getPlayer(p.parasiteHostId)?.name || '')}</span>`);
         if (node && node.layer !== 'land' && p.status === 'alive') flags.push(`<span class="flag-chip flag-chip--oxy">缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}</span>`);
-        ['SQ1', 'SQ2', 'SQ3', 'SQ4'].forEach((sq) => { if (hasSQ(p, sq)) flags.push(`<span class="flag-chip flag-chip--buff">${ARTIFACTS[sq].short}</span>`); });
+        if (p.savedSteps > 0) flags.push(`<span class="flag-chip flag-chip--buff">⏳存${p.savedSteps}步</span>`);
+        ALL_SQ_IDS.forEach((sq) => { if (hasSQ(p, sq)) flags.push(`<span class="flag-chip flag-chip--buff">${ARTIFACTS[sq].short}</span>`); });
         if (getLinkedPartners(p.id).length > 0) flags.push('<span class="flag-chip flag-chip--wanted">命运链接</span>');
 
         const locText = state.weather === 'fog' && p.id !== state.selfId ? '??? (迷雾)' : p.stealth?.active && p.id !== state.selfId ? '??? (隐身)' : node?.name || '-';
@@ -3674,8 +3855,16 @@
         } else {
           const isPicker = ini.firstWinnerId === self.id;
           const total = ini.allWinners.length;
+          const intelHtml = ini.allWinners
+            .filter((id) => id !== ini.firstWinnerId)
+            .map((id) => {
+              const op = getPlayer(id);
+              const loc = state.weather === 'fog' && op?.id !== self.id ? '???' : (getNode(op?.location)?.name || '-');
+              return `<span class="init-intel-chip">${escapeHtml(op?.name || '?')} · ${escapeHtml(loc)} · ${op?.steps || 0}步 · ${op?.knives || 0}🔪 · ${op?.pants || 0}👖</span>`;
+            }).join('');
           boxInit.innerHTML = `
             <div class="subpanel-head"><span>📌 第一解释权：${escapeHtml(getPlayer(ini.firstWinnerId)?.name)} 自选出手顺位</span></div>
+            ${intelHtml ? `<div class="init-intel-bar">${intelHtml}</div>` : ''}
             ${isPicker ? `<div class="action-btn-grid">${Array.from({ length: total }, (_, idx) => `<button class="pk-btn pk-btn--primary" data-pick-slot="${idx}" type="button"><span class="btn-label">选择第 ${idx + 1} 个走${idx === 0 ? '（先手）' : idx === total - 1 ? '（压轴）' : ''}</span></button>`).join('')}</div>` : '<div>等待第一名决定出手顺位...</div>'}
           `;
         }
@@ -3738,6 +3927,8 @@
       if (self.bomb && enemiesHere.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="pass_bomb" type="button"><span class="btn-label">💣 免费过继炸弹</span></button>');
       if (!self.parasiteHostId && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="move" type="button"><span class="btn-label">➤ 移动 / 带人</span></button>');
       if (!self.parasiteHostId && hasSQ(self, 'SQ2') && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq2_dash" type="button"><span class="btn-label">⚡ 利刃突进攻</span></button>');
+      if (hasSQ(self, 'SQ5')) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="sq5_magnet" type="button"><span class="btn-label">🧲 吸铁石夺刀</span></button>');
+      if (!self.parasiteHostId && hasSQ(self, 'SQ6') && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq6_hook" type="button"><span class="btn-label">🪝 钩爪强拉</span></button>');
 
       const canWear = self.pants < self.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land');
       btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="wear_pants" type="button" ${canWear ? '' : 'disabled'}><span class="btn-label">👖 穿裤</span></button>`);
@@ -3779,7 +3970,8 @@
 
       const skillBtn = UI.buildRoleSkillButton(self);
       if (skillBtn) btns.push(skillBtn);
-      btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="pass" type="button"><span class="btn-label">⏭ 结束行动</span></button>');
+      const passLabel = hasSQ(self, 'SQ7') && self.steps > 0 ? '⏳ 沙漏存1步并结束' : '⏭ 结束行动';
+      btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="pass" type="button"><span class="btn-label">${passLabel}</span></button>`);
       boxAct.innerHTML = `<div class="action-btn-grid">${btns.join('')}</div>`;
     },
 
@@ -3806,7 +3998,7 @@
       if (pa.type === 'blackmarket') {
         const pickingTargetFor = localUI.subPanelState?.bmTargetContract || null;
         if (pickingTargetFor) {
-          const targets = state.players.filter((p) => p.status === 'alive' && p.id !== self.id);
+          const targets = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id);
           box.innerHTML = `
             <div class="subpanel-head"><span>选择黑市契约目标</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-back="1" type="button"><span class="btn-label">返回契约</span></button></div>
             <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-bm-commit="${pickingTargetFor}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖)</span></button>`).join('')}</div>
@@ -3830,7 +4022,7 @@
       if (pa.type === 'wish_pick') {
         const sub = localUI.subPanelState?.wishMode || null;
         if (sub === 'revive' || sub === 'jail') {
-          const pool = sub === 'revive' ? state.players.filter((p) => p.status !== 'alive') : state.players.filter((p) => p.status === 'alive');
+          const pool = sub === 'revive' ? state.players.filter((p) => p.status !== 'alive') : state.players.filter((p) => isVisibleAlive(p) && !isBarrierActive(p.location));
           box.innerHTML = `
             <div class="subpanel-head"><span>选择许愿目标（${sub === 'revive' ? '复活' : '强送入狱'}）</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
             <div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-wish-exec="${sub}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('') || '<span>无可选目标</span>'}</div>
@@ -3838,7 +4030,7 @@
           return;
         }
         if (sub === 'swap') {
-          const alive = state.players.filter((p) => p.status === 'alive');
+          const alive = state.players.filter((p) => isVisibleAlive(p) && !isBarrierActive(p.location));
           const first = localUI.subPanelState?.wishFirst || null;
           box.innerHTML = `
             <div class="subpanel-head"><span>空间置换：选择${first ? '第 2 名' : '第 1 名'}玩家</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
@@ -3866,17 +4058,35 @@
       const closeBtn = '<button class="pk-btn pk-btn--ghost pk-btn--sm" data-close-sub="1" type="button"><span class="btn-label">返回</span></button>';
       const curNode = getNode(self.location);
       const enemiesHere = getAlivePlayersAt(self.location, self.id);
-      const aliveEnemies = state.players.filter((p) => p.status === 'alive' && p.id !== self.id);
+      const aliveEnemies = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id);
+      const targetTags = (t) => {
+        const tags = [];
+        if (needsPinchPigFace(self, t)) tags.push('🐷需捏脸');
+        if (t.shield > 0) tags.push(`🛡×${t.shield}`);
+        if (hasSQ(t, 'SQ8')) tags.push('铁裤');
+        if (getNode(t.location)?.kind === 'ruins') tags.push('50%闪避');
+        return tags.length ? ` [${tags.join('·')}]` : '';
+      };
 
       if (sub.type === 'move') {
         const moves = getReachableMoveNodes(self);
-        const carryChecks = enemiesHere.map((e) => `
-          <label class="pk-check"><input type="checkbox" data-carry-id="${e.id}" ${(sub.carryIds || []).includes(e.id) ? 'checked' : ''} /><span class="pk-check-box"></span><span class="pk-check-text">强带 ${escapeHtml(e.name)}</span></label>
+        const carryable = enemiesHere.filter((e) => !e.parasiteHostId);
+        const carryChecks = carryable.map((e) => `
+          <label class="pk-check"><input type="checkbox" data-carry-id="${e.id}" ${(sub.carryIds || []).includes(e.id) ? 'checked' : ''} /><span class="pk-check-box"></span><span class="pk-check-text">强带 ${escapeHtml(e.name)}${needsPinchPigFace(self, e) ? ' [🐷需捏脸]' : ''}</span></label>
         `).join('');
+        const groups = [
+          { layer: 'sky', label: '☁ 天空', cls: 'pk-btn--accent' },
+          { layer: 'land', label: '🏔 陆地', cls: 'pk-btn--primary' },
+          { layer: 'ocean', label: '🌊 海洋', cls: 'pk-btn--ghost' }
+        ].map((g) => {
+          const list = moves.filter((n) => n.layer === g.layer);
+          if (list.length === 0) return '';
+          return `<div class="move-group-row"><span class="move-group-label">${g.label}</span>${list.map((n) => `<button class="pk-btn ${g.cls} pk-btn--sm" data-move-dest="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
+        }).join('');
         box.innerHTML = `
-          <div class="subpanel-head"><span>➤ 选择目的地（也可直接点击 3D 地图高亮节点）</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>➤ 选择目的地（也可点击地图高亮节点）</span>${closeBtn}</div>
           ${carryChecks ? `<div class="action-btn-grid" style="margin-bottom:6px;">${carryChecks}</div>` : ''}
-          <div class="action-btn-grid">${moves.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-move-dest="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)} (${n.layer.toUpperCase()})</span></button>`).join('')}</div>
+          ${groups}
         `;
         return;
       }
@@ -3893,13 +4103,20 @@
         return;
       }
 
-      if (['strip_pants', 'stab', 'steal_knife', 'pinch_pigface', 'steal_tank', 'pass_bomb', 'police_arrest'].includes(sub.type)) {
-        let targets = sub.type === 'police_arrest' ? aliveEnemies.filter((e) => e.location !== 'land_prison_in') : enemiesHere;
+      if (['strip_pants', 'stab', 'steal_knife', 'pinch_pigface', 'steal_tank', 'pass_bomb', 'police_arrest', 'sq5_magnet', 'sq6_hook'].includes(sub.type)) {
+        let targets = ['police_arrest', 'sq5_magnet', 'sq6_hook'].includes(sub.type) ? aliveEnemies : enemiesHere;
+        if (sub.type === 'police_arrest') targets = targets.filter((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
         if (sub.type === 'steal_knife') targets = targets.filter((e) => e.knives > 0);
+        if (sub.type === 'sq5_magnet') targets = targets.filter((e) => e.knives > 0 && (e.location === self.location || (!isBarrierActive(self.location) && !isBarrierActive(e.location))));
+        if (sub.type === 'sq6_hook') targets = targets.filter((e) => e.location !== self.location && e.location !== 'land_prison_in' && !e.parasiteHostId && !isBarrierActive(e.location));
         if (sub.type === 'pinch_pigface') targets = targets.filter((e) => needsPinchPigFace(self, e));
         if (sub.type === 'steal_tank') targets = targets.filter((e) => e.oxygenTank);
 
-        const items = targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-target-act="${sub.type}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖 / ${t.hp}❤️)</span></button>`);
+        const items = targets.map((t) => {
+          const extra = sub.type === 'sq5_magnet' ? `${t.knives}🔪` : sub.type === 'sq6_hook' ? `${escapeHtml(getNode(t.location)?.name || '')}` : `${t.pants}👖/${t.hp}❤️`;
+          const hint = sub.type === 'pinch_pigface' ? '' : targetTags(t);
+          return `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-target-act="${sub.type}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${extra})${escapeHtml(hint)}</span></button>`;
+        });
         if ((sub.type === 'strip_pants' || sub.type === 'stab') && canAttackWardenFrom(curNode)) {
           items.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-target-act="${sub.type}" data-target="NPC_WARDEN" type="button"><span class="btn-label">NPC 典狱长 (${state.warden.pants}👖/${state.warden.hp}❤️)</span></button>`);
         }
@@ -3920,8 +4137,8 @@
       }
 
       if (sub.type === 'forge_artifact') {
-        const list = ['SQ1', 'SQ2', 'SQ3', 'SQ4'].filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt);
-        box.innerHTML = `<div class="subpanel-head"><span>🔱 选择推进锻造的龙宫神器</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-forge-sq="${id}" type="button"><span class="btn-label">${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</span></button>`).join('') || '<span>四件神器已全部出世</span>'}</div>`;
+        const list = ALL_SQ_IDS.filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
+        box.innerHTML = `<div class="subpanel-head"><span>🔱 选择推进锻造的龙宫神器（8件常驻）</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-forge-sq="${id}" type="button" title="${escapeHtml(ARTIFACTS[id].desc)}"><span class="btn-label">${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</span></button>`).join('') || '<span>八件神器已全部出世或毁灭</span>'}</div>`;
         return;
       }
 
@@ -3950,10 +4167,15 @@
           `;
           return;
         }
+        if (effRole === 'aquaman') {
+          const oceanNodes = Object.values(state.nodes).filter((n) => n.layer === 'ocean' && !n.collapsed && n.id !== self.location && !isBarrierActive(n.id));
+          box.innerHTML = `<div class="subpanel-head"><span>🌊 深海潜行 · 选择潜入的海洋地点</span>${closeBtn}</div><div class="action-btn-grid">${oceanNodes.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-skill-node="${n.id}" type="button"><span class="btn-label">潜入 ${escapeHtml(n.name)}</span></button>`).join('') || '<span>暂无可潜入的海洋地点</span>'}</div>`;
+          return;
+        }
         if (['chili', 'watcher', 'parasite'].includes(effRole)) {
           let pool = effRole === 'parasite' ? enemiesHere : aliveEnemies;
-          if (effRole === 'watcher') pool = pool.filter((e) => e.location !== 'land_prison_in');
-          box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
+          if (effRole === 'watcher') pool = pool.filter((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
+          box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
         }
         if (effRole === 'undertaker') {
@@ -3968,7 +4190,7 @@
         }
         if (effRole === 'curser') {
           const first = sub.firstTarget || null;
-          box.innerHTML = `<div class="subpanel-head"><span>🩸 命运链接 · 选择${first ? '第 2 名' : '第 1 名'}存活玩家</span>${closeBtn}</div><div class="action-btn-grid">${state.players.filter((p) => p.status === 'alive' && p.id !== first).map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('')}</div>`;
+          box.innerHTML = `<div class="subpanel-head"><span>🩸 命运链接 · 选择${first ? '第 2 名' : '第 1 名'}存活玩家</span>${closeBtn}</div><div class="action-btn-grid">${state.players.filter((p) => isVisibleAlive(p) && p.id !== first).map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>`;
           return;
         }
         if (effRole === 'storm') {
@@ -3976,7 +4198,7 @@
             const occupied = Object.values(state.nodes).filter((n) => !n.collapsed && n.kind !== 'prison_in' && getAlivePlayersAt(n.id).length > 0);
             box.innerHTML = `
               <div class="subpanel-head"><span>🌪 乱流风暴 · 吹单人(免费) 或 吹全地点(1步)</span>${closeBtn}</div>
-              <div class="action-btn-grid">${state.players.filter((p) => p.status === 'alive').map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-storm-single="${t.id}" type="button"><span class="btn-label">免费吹 ${escapeHtml(t.name)}</span></button>`).join('')}</div>
+              <div class="action-btn-grid">${state.players.filter((p) => isVisibleAlive(p)).map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-storm-single="${t.id}" type="button"><span class="btn-label">免费吹 ${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>
               <div class="action-btn-grid" style="margin-top:6px;">${occupied.map((n) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-storm-node="${n.id}" type="button"><span class="btn-label">1步吹空【${escapeHtml(n.name)}】</span></button>`).join('')}</div>
             `;
           } else {
@@ -4135,7 +4357,7 @@
       Net.applyHostConfig({
         collapseStartTurn: clamp(Number(g('cfg-collapse-turn')?.value) || 10, 3, 30),
         oxygenMax: clamp(Number(g('cfg-oxygen-max')?.value) || 5, 3, 10),
-        bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 4),
+        bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 8),
         bountyKills: clamp(Number(g('cfg-bounty-kills')?.value) || 2, 1, 6),
         aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 1600, 400, 3500),
         collapseEnabled: Boolean(g('cfg-opt-collapse')?.checked),
@@ -4186,6 +4408,20 @@
       Net.sendRoleSelect(pick.id);
       UI.renderRoleDossier();
       window.VFX?.toast(`随机盲选锁定：【${pick.name}】`, 'info');
+    });
+
+    document.getElementById('mobile-lobby-tabs')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.m-tab');
+      if (!btn || !btn.dataset.ltab) return;
+      localUI.mobileLobbyTab = btn.dataset.ltab;
+      const gridEl = document.getElementById('lobby-grid');
+      if (gridEl) {
+        gridEl.dataset.lobbyTab = localUI.mobileLobbyTab;
+        gridEl.scrollTop = 0;
+      }
+      document.querySelectorAll('#mobile-lobby-tabs .m-tab').forEach((b) =>
+        b.classList.toggle('is-active', b === btn)
+      );
     });
 
     document.getElementById('role-grid')?.addEventListener('click', (e) => {

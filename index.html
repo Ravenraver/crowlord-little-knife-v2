@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Little Knife</title>
-  <link rel="stylesheet" href="style.css?v=2.2" />
+  <link rel="stylesheet" href="style.css?v=2.3" />
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
-  <script src="vfx.js?v=2.2" defer></script>
-  <script src="game.js?v=2.2" defer></script>
+  <script src="vfx.js?v=2.3" defer></script>
+  <script src="game.js?v=2.3" defer></script>
 </head>
 <body data-mood="p3r">
   <!-- 全屏特效与视觉氛围层 -->
@@ -54,7 +54,13 @@
       </div>
     </header>
 
-    <section class="lobby-grid">
+    <!-- 手机竖屏大厅专属：房间 / 选角 双标签切换，彻底告别挤占与滑不动 -->
+    <nav id="mobile-lobby-tabs" class="mobile-lobby-tabs" aria-label="大厅视图切换">
+      <button class="m-tab is-active" data-ltab="room" type="button">🏠 房间 & 开局</button>
+      <button class="m-tab" data-ltab="roles" type="button">🎭 选择角色 · <span id="mobile-lobby-role-name">普通人</span></button>
+    </nav>
+
+    <section id="lobby-grid" class="lobby-grid" data-lobby-tab="room">
       <!-- 左侧：联机控制、房间席位与规则开关 -->
       <div class="lobby-col-left">
         <!-- 身份与连接面板 -->
@@ -352,7 +358,7 @@
           <div class="guide-step-num">02</div>
           <h4>三层 3D 地图 · 呼吸与神器</h4>
           <p>地图分为<strong>天空 / 陆地 / 海洋</strong>三层。海空共用 <strong>5 回合缺氧额度</strong>（第4、5回合攻击减半且禁主动技，第5回合末未呼吸/回陆/无氧气瓶即窒息）。</p>
-          <p><strong>陆地</strong>含警局（远程三局两胜逮捕）、监狱（杀典狱长全员越狱）、黑市（8抽3恶魔契约）、地府（阵亡后有1次复活猜拳机会）；<strong>海洋</strong>龙宫可全服合力锻造 4 件唯一神器；<strong>天空</strong>可许愿或改写下回合血月/迷雾/雷暴天象。</p>
+          <p><strong>陆地</strong>含警局（远程三局两胜逮捕）、监狱（狱内外皆可杀典狱长越狱）、黑市（8抽3恶魔契约）、地府（阵亡后有1次复活猜拳，复活消耗1步）；<strong>海洋</strong>龙宫可全服合力锻造 <strong>8 件唯一神器</strong>（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）；<strong>天空</strong>可许愿或改写下回合血月/迷雾/雷暴天象。</p>
         </div>
 
         <div class="guide-step" data-step="2">
@@ -395,7 +401,7 @@
         </div>
         <div class="config-item">
           <label for="cfg-bounty-artifacts">通缉龙宫神器阈值</label>
-          <input id="cfg-bounty-artifacts" class="pk-input pk-input--sm" type="number" min="1" max="4" value="2" />
+          <input id="cfg-bounty-artifacts" class="pk-input pk-input--sm" type="number" min="1" max="8" value="2" />
         </div>
         <div class="config-item">
           <label for="cfg-bounty-kills">通缉击杀人数阈值</label>

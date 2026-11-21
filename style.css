@@ -1337,3 +1337,197 @@ body[data-mood="p5r"] .hud-turn-badge { color: #ffffff; box-shadow: 3px 3px 0 va
   .vfx-rps-hand { font-size: 28px; }
   .vfx-rps-name { font-size: 12px; }
 }
+
+/* ==========================================================================
+   v2.3 Enhancements: 8 Artifacts Layout, Grouped Move UI, & Smooth Mobile Lobby/Game Scroll
+   ========================================================================== */
+
+.hud-artifacts-bar {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.artifact-pill {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.artifact-pill.is-destroyed {
+  opacity: 0.42;
+  border-color: #64748b;
+  background: rgba(15, 23, 42, 0.72);
+  text-decoration: line-through;
+}
+
+.mobile-lobby-tabs {
+  display: none;
+}
+
+.move-group-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.move-group-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 6px;
+  background: rgba(0, 212, 255, 0.18);
+  border-left: 3px solid var(--accent);
+  color: var(--accent);
+}
+.init-intel-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+}
+.init-intel-chip {
+  padding: 2px 8px;
+  background: rgba(14, 34, 77, 0.8);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  color: #dcebff;
+}
+
+/* Complete Mobile Portrait Fix: Smooth Touch Scroll + Zero Overlap + Horizontal 8-Artifact Strip */
+@media (max-width: 820px) {
+  /* Kill GPU-heavy drop-shadow & clip-path on mobile panels so WeChat/Android touch scroll never freezes */
+  .pk-panel {
+    clip-path: none !important;
+    filter: none !important;
+    padding: 10px 12px;
+  }
+  .pk-panel::after { display: none; }
+
+  /* Mobile Lobby: Fixed header + 2-Tab switcher + 100% smooth dedicated scroll viewport */
+  #screen-lobby.is-active {
+    height: 100dvh;
+    overflow: hidden;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+  .lobby-header {
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .header-tools { gap: 6px; }
+  .header-tools .pk-btn { padding: 6px 10px; font-size: 12px; transform: none; box-shadow: 2px 2px 0 #000; }
+  .header-tools .pk-btn .btn-label { transform: none; }
+
+  .mobile-lobby-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 6px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 3;
+  }
+
+  .lobby-grid {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: block !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    padding-bottom: 36px;
+  }
+
+  .lobby-grid[data-lobby-tab="room"] .lobby-col-right { display: none !important; }
+  .lobby-grid[data-lobby-tab="roles"] .lobby-col-left { display: none !important; }
+
+  .lobby-col-left,
+  .lobby-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .panel-roster,
+  .panel-dossier {
+    flex: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  .lobby-player-list {
+    flex: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Role Dossier on Mobile: detail card on top, full 2-col role grid smoothly scrollable */
+  .panel-dossier {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dossier-toolbar { order: 1; gap: 8px; }
+  .role-detail-panel {
+    order: 2;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .role-grid {
+    order: 3;
+    flex: none !important;
+    overflow: visible !important;
+    max-height: none !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+    padding: 2px 0 12px;
+  }
+  .role-card {
+    clip-path: none;
+    padding: 9px 10px;
+  }
+  .role-tab {
+    transform: none;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .role-tab span { transform: none; }
+
+  /* Mobile In-game: 8 Artifacts as compact single-row horizontal swipe strip */
+  .hud-artifacts-bar {
+    display: flex !important;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    gap: 6px;
+    padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .hud-artifacts-bar::-webkit-scrollbar { height: 3px; }
+  .artifact-pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 4px 8px;
+    font-size: 11px;
+    clip-path: none;
+  }
+
+  /* Guarantee smooth native touch scrolling inside every mobile scrollable panel */
+  .ingame-player-list,
+  .battle-log-list,
+  .panel-action-dock,
+  .comms-messages,
+  .pk-modal {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  .hud-turn-order,
+  .comms-quick-phrases {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+}

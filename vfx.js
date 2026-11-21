@@ -1,5 +1,7 @@
 /* ==========================================================================
-   Little Knife (v2.4) — VFX & Web Audio Procedural Engine
+   Little Knife (v2.4.6) — VFX & Web Audio Procedural Engine
+   - 猜拳平局改为「极速闪帧」（quick 模式，不震屏、不排队）
+   - 默认播报节奏改为标准(2.4s)，并提供慢速 / 极速切换
    Global Namespace: window.VFX
    Zero-dependency native module aligned with index.html & style.css
    ========================================================================== */
@@ -19,7 +21,7 @@
     mood: 'p3r',
     weather: 'clear',
     fogImmune: false,
-    speed: 'slow',
+    speed: 'normal',
     width: window.innerWidth,
     height: window.innerHeight,
     dpr: Math.min(window.devicePixelRatio || 1, 2),
@@ -399,6 +401,33 @@
       .vfx-rps-name { margin-top: 4px; font-family: var(--font-display); font-weight: 900; font-size: 13px; transform: skewX(10deg); }
       .vfx-rps-tag { margin-top: 3px; font-size: 11px; font-weight: 900; color: #ffe600; transform: skewX(10deg); }
       .vfx-rps-sub { font-size: 14px; font-weight: 800; color: #ffe600; letter-spacing: 0.08em; text-shadow: 2px 2px 0 #000; }
+      /* 平局极速闪帧：小、快、不遮挡、不震屏 */
+      .vfx-rps-overlay.is-quick {
+        background: radial-gradient(circle, rgba(0, 212, 255, 0.16), rgba(3, 6, 16, 0.42));
+        transition: opacity 0.08s linear;
+      }
+      .vfx-rps-overlay.is-quick .vfx-rps-ribbon {
+        padding: 7px 14px 9px;
+        gap: 5px;
+        border-top-width: 3px;
+        border-bottom-width: 3px;
+        box-shadow: 0 10px 0 rgba(0, 0, 0, 0.7);
+      }
+      .vfx-rps-overlay.is-quick .vfx-rps-kicker { padding: 1px 7px; font-size: 11px; }
+      .vfx-rps-overlay.is-quick .vfx-rps-title { font-size: clamp(16px, 2.1vw, 22px); text-shadow: 2px 2px 0 #000; }
+      .vfx-rps-overlay.is-quick .vfx-rps-cards { gap: 6px; }
+      .vfx-rps-overlay.is-quick .vfx-rps-card {
+        min-width: 72px;
+        padding: 4px 7px;
+        border-width: 2px;
+        transform: skewX(-8deg) scale(0.94);
+        box-shadow: 3px 3px 0 #000;
+        animation-duration: 0.14s;
+      }
+      .vfx-rps-overlay.is-quick .vfx-rps-hand { font-size: 22px; }
+      .vfx-rps-overlay.is-quick .vfx-rps-name { font-size: 10.5px; }
+      .vfx-rps-overlay.is-quick .vfx-rps-tag { font-size: 9.5px; }
+      .vfx-rps-overlay.is-quick .vfx-rps-sub { font-size: 11.5px; }
       @keyframes vfx-rps-slam {
         0% { opacity: 0; transform: skewX(-18deg) scale(1.7) translateY(-18px); }
         100% { opacity: 1; transform: skewX(-10deg) scale(1) translateY(0); }
@@ -1017,7 +1046,9 @@
     const title = options.title || 'RPS CLASH // 猜拳亮牌';
     const subtitle = options.subtitle || '';
     const kicker = options.kicker || 'SHOWDOWN';
+    const quick = Boolean(options.quick);
     const durationMs = typeof options.durationMs === 'number' ? options.durationMs : 2200;
+    const holdMs = quick ? clampMs(durationMs, 320, 900) : durationMs;
 
     return new Promise((resolve) => {
       const overlay = ensureRpsOverlay();
@@ -1045,21 +1076,33 @@
         </div>
       `;
 
+      overlay.classList.toggle('is-quick', quick);
       overlay.classList.remove('is-hidden');
       void overlay.offsetWidth;
       overlay.classList.add('is-active');
 
-      AudioEngine.play('rps_clash');
-      shake(8, 220);
+      // 平局走「极速闪帧」：不震屏、不炸音，只留一记轻提示，立刻进入下一轮
+      if (quick) {
+        AudioEngine.play('click');
+      } else {
+        AudioEngine.play('rps_clash');
+        shake(8, 220);
+      }
 
       window.setTimeout(() => {
         overlay.classList.remove('is-active');
         window.setTimeout(() => {
           overlay.classList.add('is-hidden');
           resolve();
-        }, 170);
-      }, durationMs);
+        }, quick ? 90 : 170);
+      }, holdMs);
     });
+  }
+
+  function clampMs(v, min, max) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return min;
+    return Math.max(min, Math.min(max, n));
   }
 
   function setMood(mood) {

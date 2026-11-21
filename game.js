@@ -1,6 +1,7 @@
 /* ==========================================================================
-   Little Knife (v2.4) — Complete Unified Game Engine, 16-Role State Machine,
-   3D Map Controller, PeerJS Authority Netcode & Tactical Comms (Audited Final)
+   Little Knife (v2.4.6 「地图战况版」) — Complete Unified Game Engine,
+   16-Role State Machine, Map-Attached Battle Records, PeerJS Netcode & Comms
+   核心改动：猜拳平局极速重猜 / 角色栏改为速览条 / 战报抽屉 / 地图承载战况
    Global Namespace: window.LK
    ========================================================================== */
 (() => {
@@ -98,26 +99,32 @@
 
   const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
 
+  // 地图逻辑棋盘尺寸（与 style.css 中 .map-scene-3d 的宽高保持一致）
+  const BOARD_W = 1460;
+  const BOARD_H = 560;
+
   const STATIC_NODES = [
-    { id: 'sky_stable', name: '马厩', layer: 'sky', x: 26, y: 36, kind: 'stable', collapsible: true, desc: '天空层：耗 1 步天马空降陆地任意非狱内非结界点，落地免费扒 1 名目标 1 裤（无目标则免费 +1🔪）。' },
-    { id: 'sky_wish', name: '许愿池', layer: 'sky', x: 76, y: 40, kind: 'wish', collapsible: true, desc: '天空层：个人累计投入 2 步发动自利神迹（含神赐重整/抽干氧源/全图缴械/复活/换位/入狱）。' },
-    { id: 'sky_observatory', name: '天象台', layer: 'sky', x: 50, y: 74, kind: 'observatory', collapsible: true, desc: '天空层：耗 1 步改写下回合天象（血月 / 迷雾 / 雷暴），施法者独享下回合主场特权！' },
+    { id: 'sky_stable', name: '马厩', layer: 'sky', x: 13, y: 18, kind: 'stable', collapsible: true, desc: '天空层：耗 1 步天马空降陆地任意非狱内非结界点，落地免费扒 1 名目标 1 裤（无目标则免费 +1🔪）。' },
+    { id: 'sky_wish', name: '许愿池', layer: 'sky', x: 47, y: 14, kind: 'wish', collapsible: true, desc: '天空层：个人累计投入 2 步发动自利神迹（含神赐重整/抽干氧源/全图缴械/复活/换位/入狱）。' },
+    { id: 'sky_observatory', name: '天象台', layer: 'sky', x: 81, y: 18, kind: 'observatory', collapsible: true, desc: '天空层：耗 1 步改写下回合天象（血月 / 迷雾 / 雷暴），施法者独享下回合主场特权！' },
 
-    { id: 'land_police', name: '警察局', layer: 'land', x: 24, y: 24, kind: 'police', collapsible: true, desc: '1步远程三局两胜逮捕（迷雾禁跨点）；1步搬尸回 +0.5 HP；1步自首入狱。' },
-    { id: 'land_prison_out', name: '监狱外', layer: 'land', x: 50, y: 20, kind: 'prison_out', collapsible: true, desc: '常驻无限刷新 NPC 典狱长（3裤1命），击杀后狱内全员立刻释放！' },
-    { id: 'land_prison_in', name: '监狱内', layer: 'land', x: 74, y: 20, kind: 'prison_in', collapsible: false, desc: '与外界物理隔离。可直接扒/咔典狱长自行越狱，或等待外界劫狱、海王水遁逃生。' },
-    { id: 'land_dock', name: '码头', layer: 'land', x: 22, y: 76, kind: 'dock', collapsible: true, desc: '耗 1 步下海前往水族馆、遗迹或龙宫。' },
-    { id: 'land_blackmarket', name: '黑市', layer: 'land', x: 52, y: 78, kind: 'blackmarket', collapsible: true, desc: '耗 1 步（普通人每回合首次 0 步）不猜拳，随机抽取 3 份恶魔契约择一签下。' },
-    { id: 'land_underworld', name: '地府', layer: 'land', x: 80, y: 74, kind: 'underworld', collapsible: true, desc: '普通陆地地点（活人可堵门），也是阵亡者赢拳复活后的出生之地。' },
+    { id: 'land_police', name: '警察局', layer: 'land', x: 13, y: 44, kind: 'police', collapsible: true, desc: '1步远程三局两胜逮捕（迷雾禁跨点）；1步搬尸回 +0.5 HP；1步自首入狱。' },
+    { id: 'land_prison_out', name: '监狱外', layer: 'land', x: 31, y: 44, kind: 'prison_out', collapsible: true, desc: '常驻无限刷新 NPC 典狱长（3裤1命），击杀后狱内全员立刻释放！' },
+    { id: 'land_prison_in', name: '监狱内', layer: 'land', x: 49, y: 40, kind: 'prison_in', collapsible: false, desc: '与外界物理隔离。可直接扒/咔典狱长自行越狱，或等待外界劫狱、海王水遁逃生。' },
+    { id: 'land_underworld', name: '地府', layer: 'land', x: 81, y: 44, kind: 'underworld', collapsible: true, desc: '普通陆地地点（活人可堵门），也是阵亡者赢拳复活后的出生之地。' },
 
-    { id: 'ocean_aquarium', name: '水族馆', layer: 'ocean', x: 24, y: 48, kind: 'aquarium', collapsible: true, desc: '耗 1 步佩戴青蛙面罩（永久水下呼吸，代价：裤清零且上限永久 0，HP 变为 0.5）。' },
-    { id: 'ocean_ruins', name: '遗迹', layer: 'ocean', x: 54, y: 66, kind: 'ruins', collapsible: true, desc: '受击享 50% 闪避；耗 1 步挖掘（25% 裤上限→10；75% 保底 +0.5 裤上限至 4，已 ≥4 则 +0.5 裤）。' },
-    { id: 'ocean_palace', name: '龙宫', layer: 'ocean', x: 78, y: 38, kind: 'palace', collapsible: true, desc: '全服共享进度锻造 8 件唯一神器（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）。' }
+    { id: 'land_dock', name: '码头', layer: 'land', x: 11, y: 70, kind: 'dock', collapsible: true, desc: '耗 1 步下海前往水族馆、遗迹或龙宫。' },
+    { id: 'land_blackmarket', name: '黑市', layer: 'land', x: 36, y: 70, kind: 'blackmarket', collapsible: true, desc: '耗 1 步（普通人每回合首次 0 步）不猜拳，随机抽取 3 份恶魔契约择一签下。' },
+
+    { id: 'ocean_aquarium', name: '水族馆', layer: 'ocean', x: 63, y: 64, kind: 'aquarium', collapsible: true, desc: '耗 1 步佩戴青蛙面罩（永久水下呼吸，代价：裤清零且上限永久 0，HP 变为 0.5）。' },
+    { id: 'ocean_ruins', name: '遗迹', layer: 'ocean', x: 77, y: 72, kind: 'ruins', collapsible: true, desc: '受击享 50% 闪避；耗 1 步挖掘（25% 裤上限→10；75% 保底 +0.5 裤上限至 4，已 ≥4 则 +0.5 裤）。' },
+    { id: 'ocean_palace', name: '龙宫', layer: 'ocean', x: 91, y: 64, kind: 'palace', collapsible: true, desc: '全服共享进度锻造 8 件唯一神器（大刀/利刃/猪脸/云梯/吸铁石/钩爪/沙漏/铁裤）。' }
   ];
 
+  // 8 个「家」在陆地层最下方排成一行迷你卡，避免抢占主要地点版面
   const HOME_SLOTS = [
-    { x: 14, y: 48 }, { x: 34, y: 46 }, { x: 54, y: 48 }, { x: 74, y: 48 },
-    { x: 88, y: 46 }, { x: 36, y: 60 }, { x: 64, y: 60 }, { x: 46, y: 36 }
+    { x: 7, y: 86 }, { x: 19.7, y: 86 }, { x: 32.4, y: 86 }, { x: 45.1, y: 86 },
+    { x: 57.8, y: 86 }, { x: 70.5, y: 86 }, { x: 83.2, y: 86 }, { x: 95.9, y: 86 }
   ];
 
   const DEFAULT_CONFIG = {
@@ -189,6 +196,8 @@
     focusLayer: 'all',
     pulsingNodes: new Map(),
     confirmArm: null,
+    logDrawerOpen: false,
+    focusNodeId: null,
     pendingTimers: []
   };
 
@@ -237,6 +246,49 @@
     return s;
   }
 
+  // ------------------------------------------------------------------
+  // 地图战况记录：把每一条战报「钉」在对应的地点卡与角色身上，
+  // 这样玩家不需要滚动日志，只要看地图就能知道谁做了什么、结果如何。
+  // ------------------------------------------------------------------
+  function pushNodeEvent(nodeId, ev) {
+    const node = state.nodes[nodeId];
+    if (!node) return;
+    if (!Array.isArray(node.history)) node.history = [];
+    const last = node.history[node.history.length - 1];
+    if (last && last.turn === ev.turn && last.text === ev.text && last.order === ev.order) return;
+    node.history.push(ev);
+    if (node.history.length > 6) node.history.splice(0, node.history.length - 6);
+    node.historySeq = (node.historySeq || 0) + 1;
+    if (ev.actorId) node.lastActorId = ev.actorId;
+    node.lastEventTurn = ev.turn;
+  }
+
+  // 从一条战报里推断它应该记在哪些地点卡上
+  function deriveEventNodeIds(text, meta) {
+    const set = new Set();
+    const m = meta || {};
+    if (m.locId) set.add(m.locId);
+    const actor = m.actorId ? getPlayer(m.actorId) : null;
+    if (actor && actor.location) set.add(actor.location);
+    (m.targetIds || []).forEach((tid) => {
+      const t = getPlayer(tid);
+      if (t && t.location) set.add(t.location);
+    });
+    if (set.size === 0) {
+      // 文本里带【地点名】的战报按地点名归属
+      Object.values(state.nodes).forEach((n) => {
+        if (n && n.name && text.includes(`【${n.name}】`)) set.add(n.id);
+      });
+    }
+    if (set.size === 0) {
+      // 兜底：文本里提到的角色所在地点
+      state.players.forEach((p) => {
+        if (p && p.name && p.location && text.includes(p.name)) set.add(p.location);
+      });
+    }
+    return Array.from(set).filter((id) => Boolean(state.nodes[id])).slice(0, 4);
+  }
+
   function addLog(text, kind = 'normal', meta = null) {
     const m = meta || {};
     state.logs.push({
@@ -250,6 +302,28 @@
       isMoveToLoc: Boolean(m.isMoveToLoc)
     });
     if (state.logs.length > 140) state.logs.splice(0, state.logs.length - 140);
+    try {
+      const qi = Array.isArray(state.turnQueue) && m.actorId
+        ? state.turnQueue.findIndex((e) => e.playerId === m.actorId) + 1
+        : 0;
+      const ev = {
+        id: uid('ev'),
+        turn: state.turn,
+        order: qi > 0 ? qi : 0,
+        kind,
+        actorId: m.actorId || null,
+        text,
+        phase: state.phase
+      };
+      deriveEventNodeIds(text, m).forEach((nid) => pushNodeEvent(nid, ev));
+      if (m.actorId) {
+        const ap = getPlayer(m.actorId);
+        if (ap) {
+          ap.lastAct = { turn: state.turn, text, order: ev.order, kind };
+          ap.lastActSeq = (ap.lastActSeq || 0) + 1;
+        }
+      }
+    } catch (_) { /* 地图记录失败不应影响对局 */ }
   }
 
   function triggerNodePulse(nodeId) {
@@ -992,7 +1066,7 @@
   function buildMatchNodes(players) {
     const nodes = {};
     STATIC_NODES.forEach((n) => {
-      nodes[n.id] = { ...n, collapsed: false, barrierUntilTurn: 0, droppedArtifacts: [], corpses: [] };
+      nodes[n.id] = { ...n, collapsed: false, barrierUntilTurn: 0, droppedArtifacts: [], corpses: [], history: [], historySeq: 0 };
     });
     players.forEach((p, idx) => {
       const slot = HOME_SLOTS[idx % HOME_SLOTS.length];
@@ -1000,7 +1074,7 @@
       nodes[homeId] = {
         id: homeId, name: `${p.name}的家`, layer: 'land', x: slot.x, y: slot.y,
         kind: 'home', ownerId: p.id, collapsible: false, collapsed: false,
-        barrierUntilTurn: 0, droppedArtifacts: [], corpses: [],
+        barrierUntilTurn: 0, droppedArtifacts: [], corpses: [], history: [], historySeq: 0,
         desc: `${p.name} 的陆地出生点（不受残局坍塌影响）。`
       };
       p.homeId = homeId;
@@ -1730,6 +1804,7 @@
       });
 
       if (isDraw) {
+        addLog(`🤝 猜拳平局：${state.rps.participants.map((id) => getPlayer(id)?.name || '特工').join('、')} 同时出拳未分胜负 → 立刻重猜`, 'system', { actorId: null });
         state.players.forEach((p) => {
           if (p.status === 'alive' && p.roleId === 'reverser' && p.momentum > 0) {
             p.momentum -= 1;
@@ -1742,21 +1817,27 @@
         addLog(`✊ 猜拳：${winNames} 胜（各+${losersCount}步）`, 'system');
       }
 
+      // 平局：极速闪一帧「平局」提示后立刻重猜，绝不插长播报拖手
       emitFx('rpsClash', {
-        kicker: `TURN ${state.turn} // SHOWDOWN`,
-        title: isDraw ? '平局！重新出拳！' : `${winners.map((id) => getPlayer(id)?.name).join('、')} 胜出！`,
-        subtitle: isDraw ? '未分胜负，立刻重猜' : `击败 ${losersCount} 人 · 胜者各获 +${losersCount}步`,
+        kicker: isDraw ? `TURN ${state.turn} // DRAW` : `TURN ${state.turn} // SHOWDOWN`,
+        title: isDraw ? '平局 · 立刻重猜！' : `${winners.map((id) => getPlayer(id)?.name).join('、')} 胜出！`,
+        subtitle: isDraw ? '同步出拳 · 无分胜负 · 下一轮出拳！' : `击败 ${losersCount} 人 · 胜者各获 +${losersCount}步`,
         entries,
-        durationMs: 2200
+        quick: isDraw,
+        durationMs: isDraw ? 520 : 1750
       });
+      if (isDraw) {
+        emitFx('tacticalFeed', { actor: '全员', action: '猜拳平局', result: '极速重猜 · 无需等待播报', highlight: true });
+      }
 
       Net.broadcastState();
       UI.renderAll();
 
+      // 平局用最短间隔（约 0.55 秒）重开下一轮猜拳
       scheduleHostTask(() => {
         if (isDraw) Engine.startMainRps(state.rps.participants, state.rps.round + 1);
         else Engine.finalizeMainRps(winners, losersCount);
-      }, 2350);
+      }, isDraw ? 560 : 1800);
     },
 
     finalizeMainRps(winnerIds, baseSteps = 1) {
@@ -1884,17 +1965,19 @@
         winners = state.initiative.contenders.filter((id) => state.initiative.choices[id] === winHand);
       }
 
+      // 解释权争夺同样按「平局极速、分出胜负短暂」的节奏推进
       emitFx('rpsClash', {
-        kicker: 'INITIATIVE // 解释权争夺',
-        title: isDraw ? '解释权平局重猜！' : `${winners.map((id) => getPlayer(id)?.name).join('、')} 胜出！`,
-        subtitle: winners.length === 1 ? '夺得第一解释权，即将自选行动顺位' : '胜者继续角逐唯一第一名',
+        kicker: isDraw ? 'INITIATIVE // DRAW' : 'INITIATIVE // 解释权争夺',
+        title: isDraw ? '解释权平局 · 立刻重猜！' : `${winners.map((id) => getPlayer(id)?.name).join('、')} 胜出！`,
+        subtitle: isDraw ? '下一轮出拳！' : winners.length === 1 ? '夺得第一解释权，即将自选行动顺位' : '胜者继续角逐唯一第一名',
         entries: state.initiative.contenders.map((id) => ({
           name: getPlayer(id)?.name || '特工',
           hand: state.initiative.choices[id],
           outcome: isDraw ? 'draw' : winners.includes(id) ? 'win' : 'lose',
           tag: isDraw ? 'DRAW' : winners.includes(id) ? '晋级' : '顺位递推'
         })),
-        durationMs: 2000
+        quick: isDraw,
+        durationMs: isDraw ? 500 : 1500
       });
 
       Net.broadcastState();
@@ -1904,7 +1987,7 @@
         if (isDraw) Engine.startInitiativeRps(state.initiative.contenders, state.initiative.allWinners, state.initiative.round + 1);
         else if (winners.length > 1) Engine.startInitiativeRps(winners, state.initiative.allWinners, state.initiative.round + 1);
         else Engine.enterInitiativeSlotPick(winners[0], state.initiative.allWinners);
-      }, 2150);
+      }, isDraw ? 540 : 1560);
     },
 
     enterInitiativeSlotPick(firstWinnerId, allWinners) {
@@ -3270,15 +3353,17 @@
         else { sr.bScore += 1; roundWinner = sr.bId; }
       }
 
+      const subIsTie = !roundWinner;
       emitFx('rpsClash', {
         kicker: sr.label,
-        title: roundWinner ? `${getPlayer(roundWinner)?.name} 拿下本小局！` : '小局平手！',
+        title: roundWinner ? `${getPlayer(roundWinner)?.name} 拿下本小局！` : '小局平手 · 立刻重出！',
         subtitle: `当前比分 ${pa?.name} ${sr.aScore} : ${sr.bScore} ${pb?.name}`,
         entries: [
           { name: pa?.name, hand: ha, outcome: roundWinner === sr.aId ? 'win' : roundWinner ? 'lose' : 'draw', tag: `${sr.aScore} 胜` },
           { name: pb?.name, hand: hb, outcome: roundWinner === sr.bId ? 'win' : roundWinner ? 'lose' : 'draw', tag: `${sr.bScore} 胜` }
         ],
-        durationMs: 2000
+        quick: subIsTie,
+        durationMs: subIsTie ? 480 : 1250
       });
 
       Net.broadcastState();
@@ -3306,7 +3391,7 @@
           sendPlayerToJail(loser, `${sr.label}落败`);
           Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
         }
-      }, 2150);
+      }, subIsTie ? 520 : 1320);
     },
 
     rollBlackMarketContracts() {
@@ -3758,10 +3843,12 @@
       const randHand = () => ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
 
       if (state.phase === 'rps' && state.rps && !state.rps.revealed) {
+        // 平局重猜轮：AI 立刻出拳，避免「等 AI 慢慢出拳」的卡手感
+        const reroll = state.rps.round > 1;
         state.rps.participants.forEach((pid) => {
           const p = getPlayer(pid);
           if (p && p.isAI && !state.rps.choices[pid]) {
-            scheduleHostTask(() => Engine.submitMainRps(pid, randHand()), 300 + Math.random() * 450);
+            scheduleHostTask(() => Engine.submitMainRps(pid, randHand()), reroll ? 80 + Math.random() * 130 : 300 + Math.random() * 450);
           }
         });
         return;
@@ -3769,10 +3856,11 @@
 
       if (state.phase === 'initiative' && state.initiative) {
         if (state.initiative.mode === 'rps' && !state.initiative.revealed) {
+          const reroll = (state.initiative.round || 1) > 1;
           state.initiative.contenders.forEach((pid) => {
             const p = getPlayer(pid);
             if (p && p.isAI && !state.initiative.choices[pid]) {
-              scheduleHostTask(() => Engine.submitInitiativeRps(pid, randHand()), 350 + Math.random() * 400);
+              scheduleHostTask(() => Engine.submitInitiativeRps(pid, randHand()), reroll ? 80 + Math.random() * 120 : 350 + Math.random() * 400);
             }
           });
         } else if (state.initiative.mode === 'pick_slot') {
@@ -3785,10 +3873,11 @@
       }
 
       if (state.phase === 'sub_rps' && state.subRps && !state.subRps.revealed) {
+        const reroll = (state.subRps.round || 1) > 1;
         [state.subRps.aId, state.subRps.bId].forEach((pid) => {
           const p = getPlayer(pid);
           if (p && p.isAI && !state.subRps.choices[pid]) {
-            scheduleHostTask(() => Engine.submitSubRps(pid, randHand()), 400 + Math.random() * 350);
+            scheduleHostTask(() => Engine.submitSubRps(pid, randHand()), reroll ? 80 + Math.random() * 130 : 400 + Math.random() * 350);
           }
         });
         return;
@@ -4083,9 +4172,10 @@
   // 8. 3D Layered Perspective Map Controller (Map3D)
   // ========================================================================
   Object.assign(Map3D, (() => {
-    const cam = { rx: 56, rz: -28, scale: 1, tx: 0, ty: 0 };
+    const cam = { rx: 28, rz: -5, scale: 1, tx: 0, ty: 0 };
     let dragging = false;
-    let startX = 0, startY = 0, startRx = 56, startRz = -28;
+    let panning = false;
+    let startX = 0, startY = 0, startRx = 28, startRz = -5, startTx = 0, startTy = 0;
 
     function applyTransform() {
       const root = document.documentElement.style;
@@ -4098,20 +4188,62 @@
 
     let currentPreset = 'default';
 
+    // 让整块战术棋盘尽量铺满视口：取宽高较小者作为适配基准
     function getResponsiveBaseScale() {
       const vp = document.getElementById('map-viewport');
       const w = vp && vp.clientWidth > 0 ? vp.clientWidth : window.innerWidth;
-      return w < 680 ? clamp((w - 16) / 680, 0.48, 0.92) : 1;
+      const h = vp && vp.clientHeight > 0 ? vp.clientHeight : window.innerHeight * 0.6;
+      // 手机竖屏：不强行把 1460px 宽的战术棋盘塞进 400px 屏幕（那样字会小到看不清），
+      // 改为放大棋盘 + 单指拖动平移 / 双指缩放来浏览。
+      if (w <= 820) return clamp(w / 520, 0.62, 1.0);
+      const s = Math.min(w / BOARD_W, h / BOARD_H);
+      return clamp(s * 1.02, 0.42, 1.06);
     }
 
     function setPreset(preset) {
       currentPreset = preset || 'default';
       const base = getResponsiveBaseScale();
-      if (currentPreset === 'top') { cam.rx = 14; cam.rz = 0; cam.scale = 1.02 * base; cam.tx = 0; cam.ty = 0; }
-      else if (currentPreset === 'side') { cam.rx = 72; cam.rz = -36; cam.scale = 0.94 * base; cam.tx = 0; cam.ty = 8; }
-      else { cam.rx = 54; cam.rz = -26; cam.scale = 1 * base; cam.tx = 0; cam.ty = 0; }
+      if (currentPreset === 'flat') { cam.rx = 0; cam.rz = 0; cam.scale = base * 1.02; cam.tx = 0; cam.ty = 0; }
+      else if (currentPreset === 'top') { cam.rx = 8; cam.rz = 0; cam.scale = base; cam.tx = 0; cam.ty = 0; }
+      else if (currentPreset === 'depth') { cam.rx = 52; cam.rz = -22; cam.scale = base * 0.98; cam.tx = 0; cam.ty = 0; }
+      else if (currentPreset === 'side') { cam.rx = 66; cam.rz = -30; cam.scale = base * 0.94; cam.tx = 0; cam.ty = 10; }
+      else { cam.rx = 28; cam.rz = -5; cam.scale = base; cam.tx = 0; cam.ty = 0; }
       applyTransform();
-      ['default', 'top', 'side'].forEach((k) => document.getElementById(`btn-cam-${k}`)?.classList.toggle('is-active', k === currentPreset));
+      ['default', 'depth', 'flat', 'top', 'side'].forEach((k) => document.getElementById(`btn-cam-${k}`)?.classList.toggle('is-active', k === currentPreset));
+    }
+
+    // 把某个地点推到视线中心：高亮 + 短暂强制显示空地点
+    // 桌面端棋盘已完整可见时只高亮；手机端 / 放大后会把该地点平移到视口中央。
+    function focusNode(nodeId) {
+      if (!nodeId) return;
+      const node = getNode(nodeId);
+      if (!node) return;
+      localUI.focusNodeId = nodeId;
+      triggerNodePulse(nodeId);
+
+      const fit = getResponsiveBaseScale();
+      const needCenter = window.innerWidth <= 820 || cam.scale > fit * 1.12;
+      if (needCenter) {
+        const rad = (cam.rx * Math.PI) / 180;
+        const dx = (node.x / 100 - 0.5) * BOARD_W * cam.scale;
+        const dy = (node.y / 100 - 0.5) * BOARD_H * cam.scale * Math.cos(rad);
+        cam.tx = clamp(-dx, -BOARD_W, BOARD_W);
+        cam.ty = clamp(-dy, -BOARD_H, BOARD_H);
+        applyTransform();
+      }
+
+      const el = document.querySelector(`.map-node[data-node-id="${CSS.escape(String(nodeId))}"]`);
+      if (el) {
+        el.classList.add('is-node-focus', 'is-forced-visible');
+        window.setTimeout(() => {
+          el.classList.remove('is-forced-visible');
+        }, 3200);
+      }
+      window.clearTimeout(focusNode._t);
+      focusNode._t = window.setTimeout(() => {
+        localUI.focusNodeId = null;
+        document.querySelectorAll('.map-node.is-node-focus').forEach((n) => n.classList.remove('is-node-focus'));
+      }, 3200);
     }
 
     function setFocusLayer(layer) {
@@ -4125,7 +4257,7 @@
     }
 
     function zoom(delta) {
-      cam.scale = clamp(cam.scale + delta, 0.42, 1.65);
+      cam.scale = clamp(cam.scale + delta, 0.42, 1.9);
       applyTransform();
     }
 
@@ -4149,34 +4281,167 @@
     function bind() {
       const vp = document.getElementById('map-viewport');
       if (!vp) return;
+      const pointers = new Map();
+      let pinchStartDist = 0;
+      let pinchStartScale = 1;
+
       vp.addEventListener('pointerdown', (e) => {
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 2) {
+          const pts = Array.from(pointers.values());
+          pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+          pinchStartScale = cam.scale;
+          dragging = false;
+          vp.classList.remove('is-dragging');
+          return;
+        }
         if (e.target.closest('.map-camera-controls') || e.target.closest('.map-node')) return;
+        // 触屏 / 中键 / 右键 / Shift+左键 = 平移棋盘；鼠标左键 = 旋转
+        panning = e.pointerType === 'touch' || e.button === 1 || e.button === 2 || e.shiftKey;
         dragging = true;
         startX = e.clientX; startY = e.clientY;
-        startRx = cam.rx; startRz = cam.rz;
+        startRx = cam.rx; startRz = cam.rz; startTx = cam.tx; startTy = cam.ty;
         vp.classList.add('is-dragging');
         vp.setPointerCapture?.(e.pointerId);
       });
       vp.addEventListener('pointermove', (e) => {
+        if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size >= 2) {
+          const pts = Array.from(pointers.values());
+          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+          cam.scale = clamp(pinchStartScale * (dist / pinchStartDist), 0.42, 1.9);
+          applyTransform();
+          return;
+        }
         if (!dragging) return;
-        cam.rz = startRz - (e.clientX - startX) * 0.35;
-        cam.rx = clamp(startRx - (e.clientY - startY) * 0.28, 6, 82);
+        if (panning) {
+          cam.tx = startTx + (e.clientX - startX);
+          cam.ty = startTy + (e.clientY - startY);
+        } else {
+          cam.rz = startRz - (e.clientX - startX) * 0.28;
+          cam.rx = clamp(startRx - (e.clientY - startY) * 0.24, 0, 82);
+        }
         applyTransform();
       });
-      const endDrag = () => { dragging = false; vp.classList.remove('is-dragging'); };
+      const endDrag = (e) => {
+        if (e && e.pointerId !== undefined) pointers.delete(e.pointerId);
+        dragging = false; panning = false;
+        vp.classList.remove('is-dragging');
+      };
       vp.addEventListener('pointerup', endDrag);
       vp.addEventListener('pointercancel', endDrag);
+      vp.addEventListener('pointerleave', () => { if (pointers.size === 0) endDrag(); });
+      vp.addEventListener('contextmenu', (e) => { if (vp.contains(e.target)) e.preventDefault(); });
       vp.addEventListener('wheel', (e) => { e.preventDefault(); zoom(e.deltaY < 0 ? 0.08 : -0.08); }, { passive: false });
       window.addEventListener('resize', () => setPreset(currentPreset));
       setPreset('default');
+      window.setTimeout(() => setPreset(currentPreset), 120);
     }
 
-    return { bind, setPreset, setFocusLayer, zoom, toggleEmptyNodes, getNodeClientRect };
+    function resetView() {
+      setPreset('default');
+    }
+
+    return { bind, setPreset, setFocusLayer, zoom, toggleEmptyNodes, getNodeClientRect, focusNode, resetView };
   })());
 
   // ========================================================================
-  // 9. Complete DOM Renderer (UI — v2.4)
+  // 9. Complete DOM Renderer (UI — v2.4.6 地图战况版)
   // ========================================================================
+  const NODE_LAYER_LABEL = { sky: '天空', land: '陆地', ocean: '海洋' };
+  const NODE_KIND_ICON = {
+    stable: '🐎', wish: '⛲', observatory: '🔭',
+    police: '🚓', prison_out: '🗝', prison_in: '⛓', dock: '⚓', blackmarket: '🕶', underworld: '☠',
+    aquarium: '🐠', ruins: '🏛', palace: '🐉', home: '🏠'
+  };
+
+  // 单个角色身上的全部增益 / 减益 / 神器（地图卡与速览条共用）
+  function statusChipDefs(p, node) {
+    const chips = [];
+    const add = (txt, cls, tip) => chips.push({ txt, cls: cls || '', tip: tip || txt });
+    if (p.status === 'pending_revive') add('地府待复', 'mu-chip--debuff', '阵亡后在地府等待猜拳复活');
+    if (p.status === 'dead_final') add('死透', 'mu-chip--dead', '无法再次复活');
+    if (p.wanted) add('通缉', 'mu-chip--wanted', '全服通缉：击杀者回 1 命 + 下回合保底 1 步');
+    if (p.paralyzed) add('麻痹', 'mu-chip--debuff', '本回合无法行动');
+    else if (p.paralyzedNextTurn) add('下回麻痹', 'mu-chip--debuff', '下回合将无法行动');
+    if (p.stealth?.active) add('隐身', 'mu-chip--buff', '量子隐身：暗步待揭晓');
+    if (p.bomb) add(`💣${p.bomb.turnsLeft}`, 'mu-chip--wanted', `人体炸弹：剩 ${p.bomb.turnsLeft} 回合`);
+    if (p.ascendCharged) add('☁蓄力', 'mu-chip--buff', '已升天蓄力：可 1 步直飞天空层');
+    if (p.roleId === 'ninja') add(p.bladeReady ? '⚡刃' : '未弹刃', p.bladeReady ? 'mu-chip--buff' : 'mu-chip--warn', p.bladeReady ? '利刃已解锁' : '须先耗 1 步弹刃');
+    if (p.frogMask) add('🐸面罩', 'mu-chip--buff', '青蛙面罩：水下呼吸（裤上限 0，HP 0.5）');
+    if (!p.oxygenTank) add('无氧瓶', 'mu-chip--warn', '氧气瓶已损坏或被抢');
+    if (p.shield > 0) add(`🛡${p.shield}`, 'mu-chip--buff', `护盾 ${p.shield} 层`);
+    if (p.roleId === 'reverser' && p.momentum > 0) add(`势${p.momentum}`, 'mu-chip--buff', `蓄势 ${p.momentum}/2`);
+    if (p.savedSteps > 0) add(`⏳${p.savedSteps}`, 'mu-chip--buff', `沙漏储存 ${p.savedSteps} 步`);
+    if (p.parasiteHostId) add(`寄生·${getPlayer(p.parasiteHostId)?.name || '?'}`, 'mu-chip--debuff', '正附身于宿主');
+    if (node && node.layer !== 'land' && p.status === 'alive' && !(node.layer === 'ocean' && isOceanOxygenImmune(p))) {
+      add(`缺氧${p.oxygenTurns}/${state.config.oxygenMax}`, p.oxygenTurns >= state.config.oxygenMax - 2 ? 'mu-chip--warn' : 'mu-chip--oxy', '海空缺氧计数，归零则窒息');
+    }
+    ALL_SQ_IDS.forEach((sq) => { if (hasSQ(p, sq)) add(ARTIFACTS[sq].short, 'mu-chip--artifact', ARTIFACTS[sq].desc); });
+    if (getLinkedPartners(p.id).length > 0) add('命运链接', 'mu-chip--wanted', '命运链接：一方扣裤/扣血时另一方同步承受');
+    return chips;
+  }
+
+  function buildStatusChips(p, node) {
+    return statusChipDefs(p, node)
+      .map((c) => `<span class="mu-chip ${c.cls}" title="${escapeHtml(c.tip)}">${c.txt}</span>`)
+      .join('');
+  }
+
+  function statusChipText(p, node) {
+    return statusChipDefs(p, node).map((c) => c.txt).join(' · ');
+  }
+
+  // 地图上的单个角色卡：名字 / 定位 / 血裤刀技杀 / 全部状态 / 最近一次动作
+  function buildUnitCard(p, node) {
+    const role = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
+    const isActive = state.phase === 'action' && state.activePlayerId === p.id;
+    const cls = ['mn-unit'];
+    if (p.id === state.selfId) cls.push('is-self');
+    if (isActive) cls.push('is-active');
+    if (p.wanted) cls.push('is-wanted');
+    if (p.status !== 'alive') cls.push('is-down');
+
+    const chips = buildStatusChips(p, node);
+    const last = p.lastAct;
+    const lastHtml = last
+      ? `<div class="mn-unit-last ${last.turn === state.turn ? '' : 'is-stale'}" title="${escapeHtml(last.text)}"><span class="mn-last-tag">T${String(last.turn).padStart(2, '0')}${last.order ? '·#' + last.order : ''}</span><span class="mn-last-txt">${formatLogHtml(last.text)}</span></div>`
+      : '';
+    const stepHtml = isActive
+      ? `<span class="mn-unit-turn">行动中${p.steps > 0 ? `·剩${p.steps}步` : ''}</span>`
+      : p.steps > 0 ? `<span class="mn-unit-step">${p.steps}步待动</span>` : '';
+
+    return `
+      <div class="${cls.join(' ')}" data-agent-id="${p.id}">
+        <div class="mn-unit-top">
+          <span class="mn-unit-name">${escapeHtml(p.name)}</span>
+          <span class="mn-unit-role">${escapeHtml(role.name)}</span>
+          ${stepHtml}
+        </div>
+        <div class="mn-unit-stats">
+          <span class="mu-st mu-st--hp">❤${p.hp}</span>
+          <span class="mu-st mu-st--pants">👖${p.pants}/${p.maxPants}</span>
+          <span class="mu-st mu-st--knife">🔪${p.knives}</span>
+          <span class="mu-st mu-st--skill">技${p.activeCharges}</span>
+          <span class="mu-st mu-st--kill">杀${p.kills}</span>
+        </div>
+        ${chips ? `<div class="mn-unit-chips">${chips}</div>` : ''}
+        ${lastHtml}
+      </div>`;
+  }
+
+  // 地点卡上的常驻战况记录（最新在上，带回合与行动顺位）
+  function buildNodeHistory(node) {
+    const hist = Array.isArray(node.history) ? node.history.slice(-4) : [];
+    if (hist.length === 0) return '';
+    const rows = hist.slice().reverse().map((ev) => `
+      <div class="mn-hist-row ${ev.turn === state.turn ? 'is-now' : ''} ${ev.kind === 'kill' ? 'is-kill' : ''} ${ev.kind === 'muted' ? 'is-muted' : ''}" title="${escapeHtml(ev.text)}">
+        <span class="mn-hist-tag">T${String(ev.turn).padStart(2, '0')}${ev.order ? `·#${ev.order}` : ''}</span>
+        <span class="mn-hist-txt">${formatLogHtml(ev.text)}</span>
+      </div>`).join('');
+    return `<div class="mn-hist" aria-label="本地点战况记录">${rows}</div>`;
+  }
+
   function clearConfirmArm() {
     if (localUI.confirmArm?.timer) window.clearTimeout(localUI.confirmArm.timer);
     localUI.confirmArm = null;
@@ -4193,6 +4458,8 @@
         gameEl?.classList.remove('is-active');
         commsFab?.classList.add('is-hidden');
         document.getElementById('comms-drawer')?.classList.add('is-hidden');
+        document.getElementById('panel-log')?.classList.add('is-hidden');
+        localUI.logDrawerOpen = false;
         UI.renderLobby();
         return;
       }
@@ -4206,7 +4473,11 @@
       UI.renderMap();
       if (window.innerWidth <= 820 && !gameEl?.dataset.camFitted) {
         if (gameEl) gameEl.dataset.camFitted = '1';
-        window.requestAnimationFrame(() => Map3D.setPreset('default'));
+        window.requestAnimationFrame(() => {
+          Map3D.setPreset('default');
+          const me = getSelfPlayer();
+          if (me && me.location) window.setTimeout(() => Map3D.focusNode(me.location), 80);
+        });
       }
       UI.renderPlayers();
       UI.renderActionDock();
@@ -4364,97 +4635,138 @@
 
       Object.values(state.nodes).forEach((node) => {
         const occupants = state.players.filter((p) => p.status === 'alive' && p.location === node.id);
+        const visibleOccupants = occupants.filter((p) => !(p.stealth?.active && p.id !== state.selfId));
         const hasWarden = node.kind === 'prison_out' && !node.collapsed;
         const isWarnCollapse = state.nextCollapseNodeId === node.id && !node.collapsed;
         const isPulsing = (localUI.pulsingNodes.get(node.id) || 0) > nowMs;
-        const hasEntities = occupants.length > 0 || hasWarden || node.corpses.length > 0 || node.droppedArtifacts.length > 0 || isBarrierActive(node.id) || isWarnCollapse || isPulsing;
+        const hist = Array.isArray(node.history) ? node.history : [];
+        const hasEntities = visibleOccupants.length > 0 || hasWarden || node.corpses.length > 0 || node.droppedArtifacts.length > 0 || isBarrierActive(node.id) || isWarnCollapse || isPulsing || hist.length > 0;
         const isSelfHere = self && self.status === 'alive' && self.location === node.id;
         const isTarget = localUI.subPanelState?.type === 'move' && reachableSet.has(node.id);
+        const isFocused = localUI.focusNodeId === node.id;
 
         const classes = ['map-node'];
+        classes.push(node.kind === 'home' ? 'map-node--home' : 'map-node--site');
+        if (node.layer) classes.push(`map-node--${node.layer}`);
         if (isSelfHere) classes.push('is-self-loc');
         if (isTarget) classes.push('is-targetable');
         if (node.collapsed) classes.push('is-collapsed');
         if (isWarnCollapse) classes.push('is-collapse-warn');
         if (isBarrierActive(node.id)) classes.push('is-barrier');
         if (isPulsing) classes.push('is-recent-pulse');
+        if (isFocused) classes.push('is-node-focus');
         if (!hasEntities && !isTarget && !node.collapsed) classes.push('is-empty-hidden');
 
-        const tokens = [];
-        occupants.forEach((p) => {
-          if (p.stealth?.active && p.id !== state.selfId) return;
-          const tCls = p.id === state.selfId ? 'node-token--self' : p.wanted ? 'node-token--wanted' : '';
-          const suffix = p.stealth?.active ? '(隐)' : p.parasiteHostId ? '(寄)' : '';
-          tokens.push(`<span class="node-token ${tCls}">${escapeHtml(p.name)}${suffix}</span>`);
-        });
-        if (hasWarden) tokens.push(`<span class="node-token node-token--npc">典狱长 ${state.warden.pants}👖/${state.warden.hp}❤️</span>`);
-        node.droppedArtifacts.forEach((sqId) => tokens.push(`<span class="node-token node-token--loot">掉落:${ARTIFACTS[sqId].short}</span>`));
-        if (node.corpses.length > 0) tokens.push(`<span class="node-token node-token--corpse">尸×${node.corpses.length}</span>`);
+        if (!buckets[node.layer]) return;
 
-        const badge = node.collapsed ? '💥' : isWarnCollapse ? '⚠将塌' : isBarrierActive(node.id) ? '🔮' : '';
-        if (buckets[node.layer]) {
+        const badge = node.collapsed ? '💥已塌' : isWarnCollapse ? '⚠将塌' : isBarrierActive(node.id) ? '🔮结界' : '';
+        const turnActs = hist.filter((h) => h.turn === state.turn).length;
+        const titleTip = escapeHtml(node.desc || node.name);
+
+        if (node.kind === 'home') {
+          // 出生点用迷你卡：名字 + 关键指标，避免挤占主要地点版面
+          const chips = visibleOccupants.map((p) => {
+            const chipCls = p.id === state.selfId ? 'is-self' : p.wanted ? 'is-wanted' : '';
+            const tip = `${p.name}｜❤${p.hp} 👖${p.pants}/${p.maxPants} 🔪${p.knives} 技${p.activeCharges}｜${statusChipText(p, node) || '无状态'}`;
+            return `<span class="home-chip ${chipCls}" data-agent-id="${p.id}" title="${escapeHtml(tip)}">${escapeHtml(p.name)} <b>❤${p.hp}</b><b>👖${p.pants}</b><b>🔪${p.knives}</b></span>`;
+          }).join('');
           buckets[node.layer].push(`
-            <div class="${classes.join(' ')}" data-node-id="${node.id}" style="--x:${node.x}%; --y:${node.y}%;" title="${escapeHtml(node.desc)}">
-              <div class="node-title"><span>${escapeHtml(node.name)}</span><span>${badge}</span></div>
-              <div class="node-tokens">${tokens.join('')}</div>
+            <div class="${classes.join(' ')}" data-node-id="${node.id}" style="--x:${node.x}%; --y:${node.y}%;" title="${titleTip}">
+              <div class="mn-head">
+                <span class="mn-name">🏠 ${escapeHtml(node.name)}</span>
+                ${badge ? `<span class="mn-tag mn-tag--alert">${badge}</span>` : ''}
+              </div>
+              <div class="node-tokens home-tokens">${chips || '<span class="home-empty">空</span>'}</div>
             </div>
           `);
+          return;
         }
+
+        const unitsHtml = visibleOccupants.slice(0, 4).map((p) => buildUnitCard(p, node)).join('');
+        const moreUnits = visibleOccupants.length > 4 ? `<div class="mn-more">+${visibleOccupants.length - 4} 人仍在此地</div>` : '';
+
+        const assets = [];
+        if (hasWarden) assets.push(`<span class="mn-asset mn-asset--npc" title="NPC 典狱长：3裤1命，击杀后狱内全员释放">🗝 典狱长 ${state.warden.pants}👖/${state.warden.hp}❤</span>`);
+        node.droppedArtifacts.forEach((sqId) => assets.push(`<span class="mn-asset mn-asset--loot" title="${escapeHtml(ARTIFACTS[sqId].desc)}">🔻 ${ARTIFACTS[sqId].short}</span>`));
+        if (node.corpses.length) assets.push(`<span class="mn-asset mn-asset--corpse">☠ 尸×${node.corpses.length}</span>`);
+
+        const unitsBlock = (visibleOccupants.length || assets.length)
+          ? `<div class="mn-units node-tokens">${unitsHtml}${assets.join('')}${moreUnits}</div>`
+          : '';
+
+        buckets[node.layer].push(`
+          <div class="${classes.join(' ')}" data-node-id="${node.id}" style="--x:${node.x}%; --y:${node.y}%;" title="${titleTip}">
+            <div class="mn-head">
+              <span class="mn-name">${NODE_KIND_ICON[node.kind] || '◈'} ${escapeHtml(node.name)}</span>
+              <span class="mn-head-tags">
+                ${turnActs > 0 ? `<span class="mn-tag mn-tag--live" title="本回合已有 ${turnActs} 条动作记录">⚡${turnActs}</span>` : ''}
+                ${badge ? `<span class="mn-tag mn-tag--alert">${badge}</span>` : ''}
+                <span class="mn-tag mn-tag--layer">${NODE_LAYER_LABEL[node.layer] || ''}</span>
+              </span>
+            </div>
+            ${unitsBlock}
+            ${buildNodeHistory(node)}
+          </div>
+        `);
       });
 
       containers.sky.innerHTML = buckets.sky.join('');
       containers.land.innerHTML = buckets.land.join('');
       containers.ocean.innerHTML = buckets.ocean.join('');
+
+      // 开局引导水印：棋盘上还没有任何战况时才显示
+      const hintEl = document.getElementById('map-empty-hint');
+      if (hintEl) {
+        const anyHistory = Object.values(state.nodes).some((n) => Array.isArray(n.history) && n.history.length > 0);
+        hintEl.classList.toggle('is-hidden', anyHistory || state.turn > 2);
+      }
     },
 
     renderPlayers() {
-      const el = document.getElementById('ingame-player-list');
+      const el = document.getElementById('agent-ribbon');
       if (!el) return;
       const selfFogImmune = state.weather === 'fog' && state.weatherOwnerId === state.selfId;
+      const orderIndex = new Map();
+      (state.turnQueue || []).forEach((e, i) => { if (!orderIndex.has(e.playerId)) orderIndex.set(e.playerId, i + 1); });
 
       el.innerHTML = state.players.map((p) => {
-        const r = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
+        const role = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
         const node = getNode(p.location);
-        const cls = ['p-card'];
+        const cls = ['agent-chip'];
         if (p.id === state.selfId) cls.push('is-self');
-        if (p.id === state.activePlayerId) cls.push('is-acting');
+        if (p.id === state.activePlayerId && state.phase === 'action') cls.push('is-acting');
         if (p.wanted) cls.push('is-wanted');
-        if (p.status !== 'alive') cls.push('is-dead');
+        if (p.status !== 'alive') cls.push('is-down');
+
+        const hidden = (state.weather === 'fog' && !selfFogImmune && p.id !== state.selfId) || (p.stealth?.active && p.id !== state.selfId);
+        const loc = hidden ? '???' : node?.name || '-';
 
         const flags = [];
-        if (p.wanted) flags.push('<span class="flag-chip flag-chip--wanted">通缉</span>');
-        if (p.status === 'pending_revive') flags.push('<span class="flag-chip flag-chip--debuff">地府待复活</span>');
-        if (p.status === 'dead_final') flags.push('<span class="flag-chip">死透</span>');
-        if (p.paralyzed || p.paralyzedNextTurn) flags.push(`<span class="flag-chip flag-chip--debuff">${p.paralyzed ? '麻痹中' : '下回麻痹'}</span>`);
-        if (p.stealth?.active) flags.push('<span class="flag-chip flag-chip--buff">量子隐身</span>');
-        if (p.bomb) flags.push(`<span class="flag-chip flag-chip--wanted">💣${p.bomb.turnsLeft}T</span>`);
-        if (p.frogMask) flags.push('<span class="flag-chip flag-chip--buff">🐸面罩</span>');
-        if (p.ascendCharged && p.status === 'alive') flags.push('<span class="flag-chip flag-chip--buff">☁已蓄力</span>');
-        if (p.roleId === 'ninja' && p.status === 'alive') flags.push(p.bladeReady ? '<span class="flag-chip flag-chip--buff">⚡已弹刃</span>' : '<span class="flag-chip flag-chip--oxy">未弹刃</span>');
-        if (!p.oxygenTank) flags.push('<span class="flag-chip flag-chip--oxy">无氧瓶</span>');
-        if (p.shield > 0) flags.push(`<span class="flag-chip flag-chip--buff">🛡×${p.shield}</span>`);
-        if (p.roleId === 'reverser' && p.momentum > 0) flags.push(`<span class="flag-chip flag-chip--buff">势${p.momentum}/2</span>`);
-        if (p.parasiteHostId) flags.push(`<span class="flag-chip flag-chip--debuff">寄生:${escapeHtml(getPlayer(p.parasiteHostId)?.name || '')}</span>`);
-        if (node && node.layer !== 'land' && p.status === 'alive') {
-          if (node.layer === 'ocean' && isOceanOxygenImmune(p)) {
-            flags.push('<span class="flag-chip flag-chip--buff">🌊海洋免氧</span>');
-          } else {
-            flags.push(`<span class="flag-chip flag-chip--oxy">缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}</span>`);
-          }
-        }
-        if (p.savedSteps > 0) flags.push(`<span class="flag-chip flag-chip--buff">⏳存${p.savedSteps}步</span>`);
-        ALL_SQ_IDS.forEach((sq) => { if (hasSQ(p, sq)) flags.push(`<span class="flag-chip flag-chip--buff">${ARTIFACTS[sq].short}</span>`); });
-        if (getLinkedPartners(p.id).length > 0) flags.push('<span class="flag-chip flag-chip--wanted">命运链接</span>');
+        if (p.wanted) flags.push('🚨');
+        if (p.stealth?.active) flags.push('👁');
+        if (p.paralyzed) flags.push('⚡');
+        if (p.bomb) flags.push('💣');
+        if (p.ascendCharged) flags.push('☁');
+        if (p.shield > 0) flags.push(`🛡${p.shield}`);
+        if (p.roleId === 'reverser' && p.momentum > 0) flags.push(`势${p.momentum}`);
+        if (p.status === 'pending_revive') flags.push('待复');
+        if (p.status === 'dead_final') flags.push('死透');
 
-        const locText = (state.weather === 'fog' && !selfFogImmune && p.id !== state.selfId) ? '??? (迷雾)' : p.stealth?.active && p.id !== state.selfId ? '??? (隐身)' : node?.name || '-';
+        const ord = orderIndex.get(p.id);
+        const stepTxt = p.steps > 0 ? `<span class="ac-step">${p.steps}步</span>` : '';
+        const tip = `${p.name} · ${role.name}｜${loc}｜❤${p.hp} 👖${p.pants}/${p.maxPants} 🔪${p.knives} 技${p.activeCharges} 杀${p.kills}`;
+
         return `
-          <div class="${cls.join(' ')}">
-            <div class="p-card-head"><span class="p-card-name">${escapeHtml(p.name)}${p.isAI ? ' 🤖' : ''}</span><span class="p-card-role">${escapeHtml(r.name)}</span></div>
-            <div class="p-card-metrics"><span class="p-metric">❤️ ${p.hp}</span><span class="p-metric">👖 ${p.pants}/${p.maxPants}</span><span class="p-metric">🔪 ${p.knives}</span></div>
-            <div class="p-card-loc"><span>📍 ${escapeHtml(locText)}</span><span>技:${p.activeCharges} · 杀:${p.kills}</span></div>
-            ${flags.length ? `<div class="p-card-flags">${flags.join('')}</div>` : ''}
-          </div>
-        `;
+          <button class="${cls.join(' ')}" type="button" data-agent-id="${p.id}" data-node-id="${p.location}" title="${escapeHtml(tip)}">
+            ${ord ? `<span class="ac-order">#${ord}</span>` : ''}
+            <span class="ac-main"><span class="ac-name">${escapeHtml(p.name)}</span><span class="ac-role">${escapeHtml(role.name)}</span></span>
+            <span class="ac-stats"><b class="ac-hp">❤${p.hp}</b><b>👖${p.pants}/${p.maxPants}</b><b>🔪${p.knives}</b><b>技${p.activeCharges}</b></span>
+            <span class="ac-foot">
+              <span class="ac-loc">📍${escapeHtml(loc)}</span>
+              ${flags.length ? `<span class="ac-flags">${flags.join(' ')}</span>` : ''}
+            </span>
+            ${stepTxt}
+          </button>`;
       }).join('');
     },
 
@@ -5117,6 +5429,12 @@
         logBadge.textContent = localUI.unreadLogCount > 9 ? '9+' : String(localUI.unreadLogCount);
         logBadge.classList.toggle('is-hidden', localUI.unreadLogCount <= 0);
       }
+
+      // 战报抽屉收起时，在顶栏按钮上提示未读条数
+      if (!localUI.logDrawerOpen) {
+        const lbl = document.querySelector('#btn-toggle-log .btn-label');
+        if (lbl) lbl.textContent = localUI.unreadLogCount > 0 ? `📜 战报(${localUI.unreadLogCount > 9 ? '9+' : localUI.unreadLogCount})` : '📜 战报';
+      }
     },
 
     renderComms() {
@@ -5304,11 +5622,52 @@
     });
 
     on('btn-cam-default', 'click', () => Map3D.setPreset('default'));
+    on('btn-cam-depth', 'click', () => Map3D.setPreset('depth'));
+    on('btn-cam-flat', 'click', () => Map3D.setPreset('flat'));
     on('btn-cam-top', 'click', () => Map3D.setPreset('top'));
     on('btn-cam-side', 'click', () => Map3D.setPreset('side'));
     on('btn-cam-zoom-in', 'click', () => Map3D.zoom(0.12));
     on('btn-cam-zoom-out', 'click', () => Map3D.zoom(-0.12));
     on('btn-toggle-empty-nodes', 'click', () => Map3D.toggleEmptyNodes());
+
+    // 战报抽屉：默认收起，需要追溯时再展开，把版面让给地图
+    const setLogDrawer = (open) => {
+      localUI.logDrawerOpen = Boolean(open);
+      const panel = document.getElementById('panel-log');
+      if (panel) panel.classList.toggle('is-hidden', !localUI.logDrawerOpen);
+      const btn = document.getElementById('btn-toggle-log');
+      if (btn) {
+        btn.setAttribute('aria-pressed', String(localUI.logDrawerOpen));
+        const lbl = btn.querySelector('.btn-label');
+        if (lbl) lbl.textContent = localUI.logDrawerOpen ? '📜 收起' : '📜 战报';
+      }
+      if (localUI.logDrawerOpen) {
+        localUI.unreadLogCount = 0;
+        UI.renderLog();
+      }
+    };
+    on('btn-toggle-log', 'click', () => setLogDrawer(!localUI.logDrawerOpen));
+    on('btn-close-log', 'click', () => setLogDrawer(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && localUI.logDrawerOpen) setLogDrawer(false);
+    });
+
+    // 全员速览条：点击任意角色 → 地图定位高亮
+    document.getElementById('agent-ribbon')?.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-agent-id]');
+      if (!chip) return;
+      const p = getPlayer(chip.dataset.agentId);
+      if (!p) return;
+      const node = getNode(p.location);
+      Map3D.focusNode?.(p.location);
+      const role = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
+      const hidden = (p.stealth?.active && p.id !== state.selfId);
+      window.VFX?.toast(
+        `${p.name} · ${role.name}｜📍${hidden ? '???' : node?.name || '-'}｜❤${p.hp} 👖${p.pants}/${p.maxPants} 🔪${p.knives} 技${p.activeCharges}`,
+        p.wanted ? 'danger' : 'info',
+        3200
+      );
+    });
 
     document.getElementById('map-camera-controls')?.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-layer-focus]');
@@ -5331,7 +5690,7 @@
       const b = e.target.closest('.m-tab');
       if (b) setMobileTab(b.dataset.mtab);
     });
-    document.getElementById('mobile-live-ticker')?.addEventListener('click', () => setMobileTab('log'));
+    document.getElementById('mobile-live-ticker')?.addEventListener('click', () => setLogDrawer(true));
 
     document.getElementById('map-scene-3d')?.addEventListener('click', (e) => {
       const nodeEl = e.target.closest('.map-node');
@@ -5344,6 +5703,22 @@
         localUI.subPanelState = null;
         Net.sendIntent({ type: 'ACTION', action: 'move', destId: nodeId, carryIds });
         return;
+      }
+      // 点角色卡：直接播报该角色当前完整状态
+      const agentEl = e.target.closest('[data-agent-id]');
+      if (agentEl) {
+        const p = getPlayer(agentEl.dataset.agentId);
+        if (p) {
+          const role = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
+          const chips = statusChipText(p, node);
+          window.VFX?.toast(
+            `${p.name} · ${role.name}｜❤${p.hp} 👖${p.pants}/${p.maxPants} 🔪${p.knives} 技${p.activeCharges} 杀${p.kills}${chips ? `｜${chips}` : ''}`,
+            p.wanted ? 'danger' : 'info',
+            4000
+          );
+          triggerNodePulse(node.id);
+          return;
+        }
       }
       window.VFX?.toast(`【${node.name}】${node.desc}`, 'info', 3500);
     });
@@ -5547,6 +5922,16 @@
     window.VFX?.init();
     Map3D.bind();
     bindEvents();
+
+    const hint = document.querySelector('.map-drag-hint');
+    const syncHint = () => {
+      if (!hint) return;
+      hint.textContent = window.innerWidth <= 820
+        ? '单指拖动平移 · 双指缩放 · 点击地点/角色查看详情'
+        : '拖拽旋转 · 右键/Shift 拖动平移 · 滚轮缩放 · 点击地点或角色查看详情';
+    };
+    syncHint();
+    window.addEventListener('resize', syncHint);
 
     const nickInput = document.getElementById('input-nickname');
     const defaultName = '雨宫莲';

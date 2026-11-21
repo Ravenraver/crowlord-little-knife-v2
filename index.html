@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Little Knife · v2.4.6 地图战术版</title>
-  <link rel="stylesheet" href="style.css?v=2.4.6" />
+  <title>Little Knife · v2.5 地图战术版</title>
+  <link rel="stylesheet" href="style.css?v=2.5" />
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
-  <script src="vfx.js?v=2.4.6" defer></script>
-  <script src="game.js?v=2.4.6" defer></script>
+  <script src="vfx.js?v=2.5" defer></script>
+  <script src="game.js?v=2.5" defer></script>
 </head>
 <body data-mood="p3r">
   <!-- 全屏特效与视觉氛围层 -->
@@ -121,19 +121,24 @@
           <div class="panel-deco-tag">RULES // MODIFIERS</div>
           <div class="rules-toggle-list">
             <label class="pk-check">
+              <input id="opt-novice" type="checkbox" checked />
+              <span class="pk-check-box"></span>
+              <span class="pk-check-text">新手模式<span class="rules-sub">显示提示 · 老手可关</span></span>
+            </label>
+            <label class="pk-check">
               <input id="opt-collapse" type="checkbox" checked />
               <span class="pk-check-box"></span>
-              <span class="pk-check-text">残局地图坍塌（第10回合起 · 提前1回合预警）</span>
+              <span class="pk-check-text">残局坍塌<span class="rules-sub">T10 起</span></span>
             </label>
             <label class="pk-check">
               <input id="opt-bounty" type="checkbox" checked />
               <span class="pk-check-box"></span>
-              <span class="pk-check-text">全服通缉悬赏</span>
+              <span class="pk-check-text">全服通缉<span class="rules-sub">神器 / 击杀触发</span></span>
             </label>
             <label class="pk-check">
               <input id="opt-vfx" type="checkbox" checked />
               <span class="pk-check-box"></span>
-              <span class="pk-check-text">全屏特效与合成音效</span>
+              <span class="pk-check-text">特效音效</span>
             </label>
           </div>
         </div>
@@ -203,29 +208,38 @@
       <div id="hud-turn-order" class="hud-turn-order" aria-label="本回合行动顺位"></div>
 
       <div class="hud-right">
-        <button id="btn-toggle-speed" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" title="切换播报节奏（平局播报已固定为极速）">
-          <span class="btn-label">播报: 慢速(3.8s)</span>
+        <button id="btn-toggle-speed" class="hud-mini" type="button" title="播报节奏">
+          <span class="hud-key">播报</span><span class="btn-label">2.4s</span>
         </button>
-        <button id="btn-toggle-empty-nodes" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" aria-pressed="false">
-          <span class="btn-label">空地点: 隐藏</span>
+        <button id="btn-toggle-log" class="hud-mini" type="button" aria-pressed="false" title="完整战报">
+          <span class="btn-label">战报</span>
         </button>
-        <button id="btn-toggle-log" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" aria-pressed="false" title="展开/收起滚动战报（地图卡已记录完整战况）">
-          <span class="btn-label">📜 战报</span>
-        </button>
-        <button id="btn-host-config-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
-          <span class="btn-label">参数</span>
-        </button>
-        <button id="btn-open-guide-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
-          <span class="btn-label">规则</span>
-        </button>
-        <button id="btn-toggle-audio-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
-          <span class="btn-label">🔊</span>
-        </button>
-        <button id="btn-leave-game" class="pk-btn pk-btn--sm pk-btn--danger" type="button">
+        <button id="btn-leave-game" class="hud-mini hud-mini--danger" type="button">
           <span class="btn-label">撤离</span>
         </button>
+        <button id="btn-hud-menu" class="hud-mini hud-mini--menu" type="button" aria-expanded="false" aria-controls="hud-more" title="更多">
+          <span class="btn-label">☰</span>
+        </button>
       </div>
+
     </header>
+
+    <!-- 收起的次要设置：固定浮层，避免被顶栏的斜切裁剪 -->
+    <div id="hud-more" class="hud-more is-hidden">
+      <button id="btn-toggle-empty-nodes" class="hud-more-item" type="button" aria-pressed="false">
+        <span class="btn-label">空地点：隐藏</span>
+      </button>
+      <button id="btn-host-config-ingame" class="hud-more-item" type="button"><span class="btn-label">房主参数</span></button>
+      <button id="btn-open-guide-ingame" class="hud-more-item" type="button"><span class="btn-label">规则说明</span></button>
+      <button id="btn-toggle-audio-ingame" class="hud-more-item" type="button"><span class="btn-label">🔊 音效</span></button>
+      <button id="btn-toggle-novice-ingame" class="hud-more-item" type="button" aria-pressed="true"><span class="btn-label">新手模式：开</span></button>
+    </div>
+
+    <!-- 新手模式：一句话上下文提示（老手可关） -->
+    <div id="novice-hint" class="novice-hint">
+      <span id="novice-hint-text" class="novice-hint-text"></span>
+      <button id="novice-hint-off" class="novice-hint-off" type="button" title="关闭新手提示">✕</button>
+    </div>
 
     <!-- 全员速览条（替代旧左栏角色卡，只保留一行极简指标） -->
     <div id="agent-ribbon" class="agent-ribbon" aria-label="全员状态速览"></div>
@@ -238,11 +252,10 @@
       <section class="game-center-stage">
         <div id="hud-artifacts-bar" class="hud-artifacts-bar"></div>
 
-        <!-- 常驻「上一动战术横幅」 -->
-        <div id="tactical-feed-bar" class="tactical-feed-bar" aria-live="polite">
-          <span id="tfeed-badge" class="tfeed-badge">LIVE</span>
-          <span id="tfeed-main" class="tfeed-main">等待本回合行动...</span>
-          <span id="tfeed-sub" class="tfeed-sub"></span>
+        <!-- 本回合动作序列：谁先动、动了谁，一眼扫完 -->
+        <div id="tactical-feed-bar" class="tactical-feed-bar turn-rail" aria-live="polite">
+          <span id="rail-now" class="rail-now">待机</span>
+          <div id="rail-track" class="rail-track"></div>
         </div>
 
         <div id="map-viewport" class="map-viewport">
@@ -359,8 +372,8 @@
     <!-- 弹窗 1：3步极简新手引导 -->
     <div id="modal-guide" class="pk-modal is-hidden">
       <div class="modal-header">
-        <span class="modal-kicker">BRIEFING // 03 STEPS · v2.4.6</span>
-        <h3 class="modal-title">战术速成指南 (v2.4.6)</h3>
+        <span class="modal-kicker">BRIEFING // 03 STEPS · v2.5</span>
+        <h3 class="modal-title">战术速成指南 (v2.5)</h3>
         <button id="guide-close" class="icon-close-btn" type="button" aria-label="关闭">✕</button>
       </div>
 
@@ -369,8 +382,8 @@
           <div class="guide-step-num">01</div>
           <h4>猜拳抢步 · 平局瞬发 · 耗刀绝杀</h4>
           <p>每回合全员猜拳，<strong>平局立刻极速重猜</strong>（不再插入长播报，只闪一帧「平局」提示，约 0.5 秒进入下一轮）。<strong>赢几个人就得几步</strong>。多人同时赢拳时，胜者再猜一次抢「第一解释权」，按顺位依次走完自己全部步数。</p>
-          <p>除坚韧者（4命）、小猪（2命）、突袭者（1命）外，其余 13 位角色基础血量均为 <strong>1.5 命</strong>。同地点先<strong>扒裤</strong>（目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>（基础 1 伤，普通刀每次「咔」消耗 1 把；<strong>SQ2 利刃享常驻小刀判定</strong>，0 普通刀亦可直接「咔」且不毁神器）。</p>
-          <div class="guide-tip">强带规则：每次移动最多强带 <strong>1 名</strong>同地点玩家；且你手里 <strong>0 刀</strong> 时无法强行带走持刀目标（持刀威慑）。</div>
+          <p>除坚韧者（<strong>3 命</strong>）、小猪（<strong>1.5 命</strong>）、突袭者（<strong>1 命</strong>）外，其余 13 位角色基础血量均为 <strong>1 命</strong>。同地点先<strong>扒裤</strong>（目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>（基础 1 伤；<strong>有刀即可「咔」，刀不会消耗</strong>；<strong>SQ2 利刃</strong>同样常驻判定）。</p>
+          <div class="guide-tip">强带规则：每次移动可<strong>免费带走 1 名</strong>同地点玩家，<strong>不再看你或对方有没有刀</strong>（只有猪脸需要先捏）。</div>
         </div>
 
         <div class="guide-step" data-step="1">

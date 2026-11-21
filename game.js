@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Little Knife (v2.4.6 「地图战况版」) — Complete Unified Game Engine,
+   Little Knife (v2.5 「战况版」) — Complete Unified Game Engine,
    16-Role State Machine, Map-Attached Battle Records, PeerJS Netcode & Comms
    核心改动：猜拳平局极速重猜 / 角色栏改为速览条 / 战报抽屉 / 地图承载战况
    Global Namespace: window.LK
@@ -80,22 +80,29 @@
 
   const ROLES = [
     { id: 'normal', num: '01', name: '普通人', arch: 'survival', archName: '生存', hp: 1.5, pants: 1.5, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '开局与常规复活自带 1 层黑市护盾，契约过载时改为获取黑市护盾。', passiveName: '精明淘货', passiveDesc: '每回合首次在黑市抽恶魔契约不消耗步数（0步），并保留每回合黑市免费刷新 1 次。', brief: '自带护盾 + 0步首进黑市免费重抽' },
-    { id: 'raider', num: '02', name: '突袭者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 1, atkMult: 1.5, activeMax: 1, activeCost: 1, activeName: '量子隐身', activeDesc: '耗1步进入隐身且不立刻行动；下回合他人可在自身位置宣告预判攻击；全员走完后你从白名单揭晓暗步并结算预判。', passiveName: '刃锋分伤', passiveDesc: '开局自带 1 刀、1.5x 伤害；同地点有 ≥2 名 0 裤合法目标时，1 步 + 1 刀可将本次攻击总额按 0.5 自由分配给多个目标。', brief: '1.5x 攻 + 同房刃锋分伤 + 量子隐身' },
+    { id: 'raider', num: '02', name: '突袭者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 1, atkMult: 1.5, activeMax: 1, activeCost: 1, activeName: '量子隐身', activeDesc: '耗1步进入隐身且不立刻行动；下回合他人可在自身位置宣告预判攻击；全员走完后你从白名单揭晓暗步并结算预判。', passiveName: '刃锋分伤', passiveDesc: '开局自带 1 刀、1.5x 伤害；同地点有 ≥2 名 0 裤合法目标时，1 步即可将本次攻击总额按 0.5 自由分配给多个目标。', brief: '1.5x 攻 + 同房刃锋分伤 + 量子隐身' },
     { id: 'storm', num: '03', name: '风暴者', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '乱流风暴', activeDesc: '远程将同层级的单人（免费，不耗步）或整个地点所有存活单位（耗 1 步）强制吹至同层其他非狱内地点，不触发带人（迷雾禁跨点）。', passiveName: '气压掌控', passiveDesc: '吹飞单人不消耗常规步数，可无缝衔接击杀或拆伙。', brief: '免费吹单人 / 1步吹全地点' },
-    { id: 'tough', num: '04', name: '坚韧者', arch: 'survival', archName: '生存', hp: 4, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '以绝对血量压制全场，无主动技（黑市过载改为获得护盾）。', passiveName: '钢铁躯体', passiveDesc: '初始拥有高达 4 命，容错率冠绝全场。', brief: '4 命肉盾，硬抗致命斩杀' },
+    { id: 'tough', num: '04', name: '坚韧者', arch: 'survival', archName: '生存', hp: 4, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '以绝对血量压制全场，无主动技（黑市过载改为获得护盾）。', passiveName: '钢铁躯体', passiveDesc: '初始拥有全场最高的 3 命，容错率冠绝全场。', brief: '3 命肉盾，硬抗致命斩杀' },
     { id: 'chili', num: '05', name: '辛红辣椒', arch: 'control', archName: '控场', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 1, activeCost: 1, activeName: '电击麻痹', activeDesc: '耗1步远程电击任意1名存活玩家（迷雾禁跨点），使其下回合无论获得多少步都无法行动（1次）。', passiveName: '高压电弧', passiveDesc: '关键回合一击封锁核心敌人的全部节奏。', brief: '1次强力远程电击麻痹' },
     { id: 'watcher', num: '06', name: '监视者', arch: 'control', archName: '控场', hp: 1.5, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '远程抓捕', activeDesc: '耗1步随时随地（含狱内，迷雾禁跨点）对任意存活玩家发起三局两胜逮捕猜拳，败者入狱。', passiveName: '全境法眼', passiveDesc: '不受警局位置限制，狱内亦可反手拉人陪葬。', brief: '全图远程三局两胜逮捕入狱' },
     { id: 'aquaman', num: '07', name: '海王', arch: 'survival', archName: '生存', hp: 1.5, pants: 1, maxPants: 2, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '深海潜行', activeDesc: '耗1步并消耗1次技能，随时随地（含狱内，被结界封锁时除外）单人直接潜入海洋层任意可达地点。', passiveName: '深海亲和', passiveDesc: '在海洋层永久免疫缺氧（无需青蛙面罩，天空层仍正常计算缺氧）；从海洋上岸固定回到码头。', brief: '海洋永久免缺氧 + 2次随时潜海' },
-    { id: 'piggy', num: '08', name: '小猪', arch: 'trick', archName: '诡计', hp: 2, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 1, activeCost: 0, activeName: '顺手牵刀', activeDesc: '开启后，在你攻击（「咔」/利刃突进）同地点目标时免费抢走对方 1 把刀（1次）。', passiveName: '天生猪脸', passiveDesc: '2 命面板 + 开局自带独立 SQ3 猪脸（不占龙宫且死亡不掉落，地府重生生成全新猪脸实例需重捏）。', brief: '2命 + 天生猪脸 + 顺手牵刀' },
+    { id: 'piggy', num: '08', name: '小猪', arch: 'trick', archName: '诡计', hp: 2, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 1, activeCost: 0, activeName: '顺手牵刀', activeDesc: '开启后，在你攻击（「咔」/利刃突进）同地点目标时免费抢走对方 1 把刀（1次）。', passiveName: '天生猪脸', passiveDesc: '1.5 命面板 + 开局自带独立 SQ3 猪脸（不占龙宫且死亡不掉落，地府重生生成全新猪脸实例需重捏）。', brief: '1.5命 + 天生猪脸 + 顺手牵刀' },
     { id: 'ninja', num: '09', name: '忍者', arch: 'assassin', archName: '刺客', hp: 1.5, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '瞬身连撞', activeDesc: '斩杀任意单位后，可消耗1次技能免费向距离1的另1单位突进撞击（1伤，先扣裤，0裤扣命）；撞死可连撞！', passiveName: '弹刃·利刃', passiveDesc: '自带独立 SQ2 利刃（享常驻小刀判定，0普通刀亦可直接「咔」与突进扣血）；开局及每次复活后处于未弹刃态，首次发动任何攻击前须先耗 1 步「⚡ 弹刃」解锁（本条命永久生效）。', brief: '先弹刃解锁 + 0刀利刃绝杀 + 斩杀连撞' },
     { id: 'puppeteer', num: '10', name: '操偶师', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '提线木偶', activeDesc: '耗1步强控同层级1名存活玩家（迷雾禁跨点），令其立刻执行1次基础动作（单人移动 / 穿裤 / 拔刀 / 同地点扒裤）。', passiveName: '丝线操纵', passiveDesc: '可借敌之手扒裤、把敌人拉出掩体或送进绝境。', brief: '远程强控同层目标执行动作' },
-    { id: 'parasite', num: '11', name: '寄生者', arch: 'assassin', archName: '刺客', hp: 1.5, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '寄生', activeDesc: '同地点耗1步附身目标，免费随行并共享氧气/面罩；宿主花1步扒裤甩开寄生者时，宿主自身也扣 0.5 裤；附身态可 0 步免费破体而出。', passiveName: '破体奇袭', passiveDesc: '破体而出不消耗步数，且破体「咔」额外 +0.5 伤（仍消耗 1 刀）。', brief: '0步破体 +0.5伤 + 甩开反扣宿主裤' },
+    { id: 'parasite', num: '11', name: '寄生者', arch: 'assassin', archName: '刺客', hp: 1.5, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '寄生', activeDesc: '同地点耗1步附身目标，免费随行并共享氧气/面罩；宿主花1步扒裤甩开寄生者时，宿主自身也扣 0.5 裤；附身态可 0 步免费破体而出。', passiveName: '破体奇袭', passiveDesc: '破体而出不消耗步数，且破体「咔」额外 +0.5 伤。', brief: '0步破体 +0.5伤 + 甩开反扣宿主裤' },
     { id: 'mirror', num: '12', name: '镜像师', arch: 'trick', archName: '诡计', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '盗版', activeDesc: '耗1步复刻并立刻释放本局上一个被使用的主动技（含海王潜海、收尸人封魂/烧尸等；无先例则 +1 刀 +0.5 裤）。', passiveName: '无限反射', passiveDesc: '以彼之道还施彼身，根据战局动态复制最强控制或爆发。', brief: '复制本局上一个主动技即时释放' },
     { id: 'reverser', num: '13', name: '逆转者', arch: 'trick', archName: '诡计', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '越输越强，一朝翻盘打出多步连击终结战场。', passiveName: '蓄势逆转', passiveDesc: '每输 1 轮猜拳存 1 层「势」（上限 2）；赢拳引爆全部势额外加步；但主猜拳每出现 1 次平局，立刻扣除 1 层势。', brief: '输拳攒势爆发 · 平局扣1势' },
     { id: 'barrier', num: '14', name: '结界师', arch: 'control', archName: '控场', hp: 1.5, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '绝对领域', activeDesc: '耗1步远程封锁任意非狱内地点直至下回合末，内外彻底隔绝（无视水遁、云梯、风暴与进出移动）。', passiveName: '空间锁死', passiveDesc: '可将关键地点变作孤岛，瓮中捉鳖或锁死海空缺氧者。', brief: '远程绝对封锁地点至下回合末' },
     { id: 'curser', num: '15', name: '诅咒师', arch: 'trick', archName: '诡计', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '命运链接', activeDesc: '耗1步远程绑定任意 2 名存活玩家持续 2 回合（迷雾禁跨点），期间一方扣裤或扣血时另一方同步承受同等代价。', passiveName: '血咒共振', passiveDesc: '强行制造双人共死困局，令肉盾与通缉犯无处可逃。', brief: '绑定 2 人共担扣裤与伤害 2 回合' },
     { id: 'undertaker', num: '16', name: '收尸人', arch: 'survival', archName: '生存', hp: 1.5, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '封魂', activeDesc: '耗1步远程销毁 1 名地府待复活者的复活资格并回 +0.5 命，或远程销毁场上任意 1 具尸体并回 +0.5 命。', passiveName: '敛尸成刃', passiveDesc: '场上有玩家阵亡自动 +1 刀；且每持有 2 把刀，「咔」伤害 +0.5（上限 +1.0）。', brief: '封魂/烧尸回血 + 每2刀增伤+0.5' }
   ];
+
+  // v2.5 平衡：除突袭者外全员基础血量 -0.5；坚韧者固定 3 命
+  ROLES.forEach((r) => {
+    if (r.id === 'raider') return;
+    if (r.id === 'tough') { r.hp = 3; return; }
+    r.hp = Math.max(0.5, roundHalf(r.hp - 0.5));
+  });
 
   const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
 
@@ -165,6 +172,7 @@
       initiative: null,
       subRps: null,
       turnQueue: [],
+      turnFeed: [],
       activePlayerId: null,
       stealthRevealQueue: [],
       pendingAction: null,
@@ -198,6 +206,8 @@
     confirmArm: null,
     logDrawerOpen: false,
     focusNodeId: null,
+    novice: true,
+    hudMenuOpen: false,
     pendingTimers: []
   };
 
@@ -289,8 +299,44 @@
     return Array.from(set).filter((id) => Boolean(state.nodes[id])).slice(0, 4);
   }
 
-  function addLog(text, kind = 'normal', meta = null) {
-    const m = meta || {};
+  // ①②③… 行动顺位序号
+  const CIRCLED = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+  function orderMark(n) {
+    const i = Number(n) || 0;
+    return CIRCLED[i] || (i > 0 ? `#${i}` : '·');
+  }
+
+  // 本回合动作序列：谁先动、动了谁、什么结果 —— 地图上方的序列条只显示这些短词
+  function recordTurnFeed(p) {
+    if (!p || !p.actor || !isHostAuthority()) return;
+    const ap = state.players.find((x) => x.name === p.actor);
+    const tp = p.target ? state.players.find((x) => x.name === p.target) : null;
+    const orderNum = Number(String(p.order || '').replace(/[^0-9]/g, '')) || 0;
+    state.turnFeed.push({
+      id: uid('tf'),
+      turn: state.turn,
+      order: orderNum,
+      actorId: ap ? ap.id : null,
+      actor: String(p.actor),
+      verb: String(p.action || ''),
+      target: String(p.target || ''),
+      result: String(p.result || ''),
+      nodeId: ap ? ap.location : null,
+      targetNodeId: tp ? tp.location : null
+    });
+    if (state.turnFeed.length > 12) state.turnFeed.shift();
+  }
+
+  // 把战报压成地图用的短语：去掉前缀符号与重复人名
+  function shortBattleText(text, actorName) {
+    let s = String(text == null ? '' : text).trim();
+    s = s.replace(/^[\s\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}✊✋✌❤👖🔪☠💥⚡🔥🐷🐸🌠⛏🔱🔭🚔🚑⛓🕶★🎯🧲🪝➤⏭⏳💨✋✦★☆]+/u, '');
+    s = s.replace(/\s+/g, ' ').trim();
+    if (actorName && s.startsWith(actorName)) s = s.slice(actorName.length).trim();
+    return s;
+  }
+
+  function addLog(text, kind = 'normal', meta = null) {    const m = meta || {};
     state.logs.push({
       id: uid('log'),
       turn: state.turn,
@@ -370,7 +416,23 @@
     switch (ev.type) {
       case 'banner': vfx.banner(p.kicker, p.title, p.sub, p.mood, p.durationMs); break;
       case 'bannerAction': vfx.bannerAction(p); break;
-      case 'tacticalFeed': vfx.tacticalFeed(p); break;
+      case 'tacticalFeed': {
+        vfx.tacticalFeed(p);
+        recordTurnFeed(p);
+        // 动作落到地图上：行动者所在地点砸出动词，跨地点互动拉一条箭头
+        const ap = state.players.find((x) => x.name === p.actor);
+        const tp = p.target ? state.players.find((x) => x.name === p.target) : null;
+        if (ap && p.action) {
+          vfx.verbSlam?.({
+            nodeId: ap.location,
+            verb: p.action,
+            targetNodeId: tp && tp.location !== ap.location ? tp.location : null,
+            hot: Boolean(p.highlight) || /咔|斩|突进|扒/.test(p.action)
+          });
+          if (tp && tp.location !== ap.location) triggerNodePulse(tp.location);
+        }
+        break;
+      }
       case 'nodePulse': triggerNodePulse(p.nodeId); break;
       case 'slash': vfx.slash(p); if (p.nodeId) triggerNodePulse(p.nodeId); break;
       case 'electricArc': vfx.electricArc(p); if (p.toNodeId) triggerNodePulse(p.toNodeId); break;
@@ -409,6 +471,26 @@
     };
   }
 
+  // 新手模式：只影响提示与解说，不动规则
+  function syncNovice() {
+    document.body.dataset.novice = localUI.novice ? '1' : '0';
+    const chk = document.getElementById('opt-novice');
+    if (chk) chk.checked = Boolean(localUI.novice);
+    const btn = document.getElementById('btn-toggle-novice-ingame');
+    if (btn) {
+      btn.setAttribute('aria-pressed', String(localUI.novice));
+      const lbl = btn.querySelector('.btn-label');
+      if (lbl) lbl.textContent = localUI.novice ? '新手模式：开' : '新手模式：关';
+    }
+  }
+
+  function setNovice(v) {
+    localUI.novice = Boolean(v);
+    try { window.localStorage.setItem('lk_novice', localUI.novice ? '1' : '0'); } catch (_) {}
+    syncNovice();
+    if (state.started) UI.renderAll();
+  }
+
   function syncLobbyRuleCheckboxes() {
     const setCheck = (id, v) => { const el = document.getElementById(id); if (el) el.checked = Boolean(v); };
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = String(v); };
@@ -423,6 +505,7 @@
     setVal('cfg-bounty-artifacts', state.config.bountyArtifacts);
     setVal('cfg-bounty-kills', state.config.bountyKills);
     setVal('cfg-ai-delay', state.config.aiDelayMs);
+    syncNovice();
   }
 
   function syncMoodFromState() {
@@ -1119,16 +1202,11 @@
     return (player.knives || 0) >= 1 || hasUsableBlade(player);
   }
 
-  // 消耗一次斩击武器：有普通小刀优先扣 1 把普通刀，0 普通刀时用 SQ2 利刃替代且不消耗神器
+  // v2.5：小刀不再消耗，仅作为「有武器即可咔」的持械条件；利刃同理常驻
   function consumeStabWeapon(player) {
     if (!player) return 'none';
-    if ((player.knives || 0) >= 1) {
-      player.knives -= 1;
-      return 'knife';
-    }
-    if (hasUsableBlade(player)) {
-      return 'blade';
-    }
+    if ((player.knives || 0) >= 1) return 'knife';
+    if (hasUsableBlade(player)) return 'blade';
     return 'none';
   }
 
@@ -1610,6 +1688,7 @@
       state.stealthRevealQueue = [];
       state.subRps = null;
       state.initiative = null;
+      state.turnFeed = [];
       state.fxSeq = 0;
       state.recentFx = [];
       localUI.lastFxSeqPlayed = 0;
@@ -1665,6 +1744,7 @@
       state.subRps = null;
       state.initiative = null;
       state.turnQueue = [];
+      state.turnFeed = [];
       state.activePlayerId = null;
 
       if (state.nextWeather) {
@@ -2145,7 +2225,7 @@
           stabDmg = Engine.calcStabDamage(attacker);
           usedKind = consumeStabWeapon(attacker);
         }
-        const costTag = usedKind === 'knife' ? '耗1刀' : '利刃';
+        const costTag = usedKind === 'knife' ? '刀' : '利刃';
         if (pred.loc === raider.location) {
           if (pred.mode === 'strip') {
             const lost = applyPantsLoss(raider, hasSQ(attacker, 'SQ1') ? 2 : 1, '预判扒裤');
@@ -2302,10 +2382,7 @@
           const ct = getPlayer(cid);
           if (!ct || !isVisibleAlive(ct) || ct.location !== actor.location || ct.id === actor.id || ct.parasiteHostId) continue;
           if (checkPigFaceBlock(ct)) return;
-          if (!hasCarryDeterrence(actor) && hasCarryDeterrence(ct)) {
-            notifyPlayer(actor.id, `持刀威慑：你手里无刀且无利刃，无法强行带走持刃的 ${ct.name}！`, 'warn');
-            return;
-          }
+          // v2.5：取消「持刀威慑」，强带不再受目标是否持刀影响
         }
 
         const isStableDrop = curNode?.kind === 'stable' && destNode.layer === 'land';
@@ -2469,7 +2546,7 @@
 
           actor.steps -= 1;
           const wUsed = consumeStabWeapon(actor);
-          const wTag = wUsed === 'knife' ? '耗1刀' : '利刃';
+          const wTag = wUsed === 'knife' ? '刀' : '利刃';
           const summaryParts = [];
           const hitTargetIds = [];
 
@@ -2498,7 +2575,7 @@
           if (state.warden.pants > 0) { notifyPlayer(actor.id, '典狱长还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
           actor.steps -= 1;
           const wUsed = consumeStabWeapon(actor);
-          const wTag = wUsed === 'knife' ? '耗1刀' : '利刃';
+          const wTag = wUsed === 'knife' ? '刀' : '利刃';
           Engine.damageWarden(actor, totalDmg);
           emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: `咔！(${wTag})`, target: 'NPC 典狱长', result: `-${totalDmg}❤️`, highlight: true });
           emitFx('nodePulse', { nodeId: actor.location });
@@ -2512,7 +2589,7 @@
 
         actor.steps -= 1;
         const wUsed = consumeStabWeapon(actor);
-        const wTag = wUsed === 'knife' ? '耗1刀' : '利刃斩';
+        const wTag = wUsed === 'knife' ? '刀' : '利刃';
         Engine.tryPiggyStealKnife(actor, target);
         const res = applyHpDamage(target, totalDmg, actor, { canDodge: true, reason: `被 ${actor.name} 持刃「咔」死` });
         const hitVerb = res.killed ? '绝杀咔' : '重创咔';
@@ -2567,7 +2644,7 @@
             emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: '利刃突进', target: 'NPC 典狱长', result: `${stablePrefix}-${pLost}👖` });
           } else {
             const wUsed = consumeStabWeapon(actor);
-            const wTag = wUsed === 'knife' ? '耗1刀' : '利刃斩';
+            const wTag = wUsed === 'knife' ? '刀' : '利刃';
             addLog(`⚔ ${actor.name} (${wTag})利刃突进斩击典狱长！`, 'kill', { actorId: actor.id });
             Engine.damageWarden(actor, dmg);
             emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: `利刃突进(${wTag})`, target: 'NPC 典狱长', result: `${stablePrefix}-${dmg}❤️`, highlight: true });
@@ -2580,7 +2657,7 @@
             emitFx('tacticalFeed', { order: orderTag, actor: actor.name, action: isStableDrop ? '天马利刃空降' : '利刃突进', target: target.name, result: `${stablePrefix}-${lost}👖`, highlight: true });
           } else {
             const wUsed = consumeStabWeapon(actor);
-            const wTag = wUsed === 'knife' ? '耗1刀' : '利刃斩';
+            const wTag = wUsed === 'knife' ? '刀' : '利刃';
             const res = applyHpDamage(target, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 利刃突进斩杀` });
             const dashVerb = res.killed ? '利刃突进绝杀' : '利刃突进重创';
             const dashResText = res.dodged ? 'MISS' : res.blocked ? '护盾' : res.killed ? `-${dmg}❤️` : `-${dmg}❤️ · 剩${target.hp}❤️`;
@@ -2905,7 +2982,7 @@
           const dmg = Engine.calcStabDamage(actor, { parasiteBurstBonus: true });
           actor.parasiteHostId = null;
           const wUsed = consumeStabWeapon(actor);
-          const wTag = wUsed === 'knife' ? '耗1刀' : '利刃斩';
+          const wTag = wUsed === 'knife' ? '刀' : '利刃';
           const res = applyHpDamage(host, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 破体斩杀` });
           const burstAct = res.killed ? '破体绝杀(0步)' : '破体重创(0步)';
           const burstRes = res.dodged ? 'MISS!' : res.blocked ? '护盾抵消' : res.killed ? '宿主爆体阵亡！' : `-${dmg}❤️ (剩 ${host.hp}❤️)`;
@@ -4383,16 +4460,17 @@
   }
 
   function buildStatusChips(p, node) {
+    // 状态用彩色文字，不套小方块：更像游戏 HUD，不像表格
     return statusChipDefs(p, node)
-      .map((c) => `<span class="mu-chip ${c.cls}" title="${escapeHtml(c.tip)}">${c.txt}</span>`)
-      .join('');
+      .map((c) => `<span class="mu-buff ${c.cls}" title="${escapeHtml(c.tip)}">${c.txt}</span>`)
+      .join('<span class="mu-dot">·</span>');
   }
 
   function statusChipText(p, node) {
     return statusChipDefs(p, node).map((c) => c.txt).join(' · ');
   }
 
-  // 地图上的单个角色卡：名字 / 定位 / 血裤刀技杀 / 全部状态 / 最近一次动作
+  // 地图上的角色行：名字 · 职业 · 四个数字 · 状态文字 · 上一动
   function buildUnitCard(p, node) {
     const role = ROLE_MAP[p.roleId] || ROLE_MAP.normal;
     const isActive = state.phase === 'action' && state.activePlayerId === p.id;
@@ -4405,39 +4483,38 @@
     const chips = buildStatusChips(p, node);
     const last = p.lastAct;
     const lastHtml = last
-      ? `<div class="mn-unit-last ${last.turn === state.turn ? '' : 'is-stale'}" title="${escapeHtml(last.text)}"><span class="mn-last-tag">T${String(last.turn).padStart(2, '0')}${last.order ? '·#' + last.order : ''}</span><span class="mn-last-txt">${formatLogHtml(last.text)}</span></div>`
+      ? `<div class="mu-last ${last.turn === state.turn ? '' : 'is-stale'}" title="${escapeHtml(last.text)}"><b class="mu-last-tag">T${String(last.turn).padStart(2, '0')}${last.order ? orderMark(last.order) : ''}</b>${escapeHtml(shortBattleText(last.text, p.name))}</div>`
       : '';
     const stepHtml = isActive
-      ? `<span class="mn-unit-turn">行动中${p.steps > 0 ? `·剩${p.steps}步` : ''}</span>`
-      : p.steps > 0 ? `<span class="mn-unit-step">${p.steps}步待动</span>` : '';
+      ? `<span class="mu-turn">行动中${p.steps > 0 ? ` ${p.steps}步` : ''}</span>`
+      : p.steps > 0 ? `<span class="mu-step">${p.steps}步</span>` : '';
 
     return `
       <div class="${cls.join(' ')}" data-agent-id="${p.id}">
-        <div class="mn-unit-top">
-          <span class="mn-unit-name">${escapeHtml(p.name)}</span>
-          <span class="mn-unit-role">${escapeHtml(role.name)}</span>
+        <div class="mu-line">
+          <span class="mu-name">${escapeHtml(p.name)}</span>
+          <span class="mu-role">${escapeHtml(role.name)}</span>
+          <span class="mu-nums">
+            <b class="mu-hp">❤${p.hp}</b>
+            <b class="mu-pants">👖${p.pants}/${p.maxPants}</b>
+            <b class="mu-knife">🔪${p.knives}</b>
+            <b class="mu-skill">技${p.activeCharges}</b>
+          </span>
           ${stepHtml}
         </div>
-        <div class="mn-unit-stats">
-          <span class="mu-st mu-st--hp">❤${p.hp}</span>
-          <span class="mu-st mu-st--pants">👖${p.pants}/${p.maxPants}</span>
-          <span class="mu-st mu-st--knife">🔪${p.knives}</span>
-          <span class="mu-st mu-st--skill">技${p.activeCharges}</span>
-          <span class="mu-st mu-st--kill">杀${p.kills}</span>
-        </div>
-        ${chips ? `<div class="mn-unit-chips">${chips}</div>` : ''}
+        ${chips ? `<div class="mu-buffs">${chips}</div>` : ''}
         ${lastHtml}
       </div>`;
   }
 
-  // 地点卡上的常驻战况记录（最新在上，带回合与行动顺位）
+  // 地点卡上的常驻战况记录：①②③ 就是行动顺序
   function buildNodeHistory(node) {
     const hist = Array.isArray(node.history) ? node.history.slice(-4) : [];
     if (hist.length === 0) return '';
     const rows = hist.slice().reverse().map((ev) => `
       <div class="mn-hist-row ${ev.turn === state.turn ? 'is-now' : ''} ${ev.kind === 'kill' ? 'is-kill' : ''} ${ev.kind === 'muted' ? 'is-muted' : ''}" title="${escapeHtml(ev.text)}">
-        <span class="mn-hist-tag">T${String(ev.turn).padStart(2, '0')}${ev.order ? `·#${ev.order}` : ''}</span>
-        <span class="mn-hist-txt">${formatLogHtml(ev.text)}</span>
+        <b class="mn-hist-ord">${orderMark(ev.order)}</b>
+        <span class="mn-hist-txt">${escapeHtml(shortBattleText(ev.text))}</span>
       </div>`).join('');
     return `<div class="mn-hist" aria-label="本地点战况记录">${rows}</div>`;
   }
@@ -4480,9 +4557,54 @@
         });
       }
       UI.renderPlayers();
+      UI.renderTurnRail();
+      UI.renderNoviceHint();
       UI.renderActionDock();
       UI.renderLog();
       UI.renderComms();
+    },
+
+    // 本回合动作序列条：① 雨宫莲 移动 ② 夜神月 扒裤→雨宫莲
+    renderTurnRail() {
+      const nowEl = document.getElementById('rail-now');
+      const track = document.getElementById('rail-track');
+      if (!track || !nowEl) return;
+      const activeP = getPlayer(state.activePlayerId);
+      const phaseMap = {
+        rps: '猜拳', initiative: '抢顺位', action: activeP ? `${activeP.name} 行动` : '行动',
+        sub_rps: '对决', stealth_reveal: '揭晓', gameover: '终局'
+      };
+      nowEl.textContent = `T${String(state.turn).padStart(2, '0')} ${phaseMap[state.phase] || ''}`;
+      const feed = Array.isArray(state.turnFeed) ? state.turnFeed : [];
+      const chips = feed.map((e, i) => {
+        const last = i === feed.length - 1;
+        return `<button class="rail-chip ${last ? 'is-last' : ''}" type="button" data-node-id="${e.nodeId || ''}" title="${escapeHtml(`${e.actor} ${e.verb}${e.target ? ' → ' + e.target : ''}${e.result ? ' · ' + e.result : ''}`)}">
+          <b>${e.order ? orderMark(e.order) : orderMark(i + 1)}</b>${escapeHtml(e.actor)}<i>${escapeHtml(e.verb)}</i>${e.target ? `<em>→${escapeHtml(e.target)}</em>` : ''}
+        </button>`;
+      }).join('');
+      track.innerHTML = chips || '<span class="rail-empty">还没有人动作</span>';
+      track.scrollLeft = track.scrollWidth;
+    },
+
+    // 新手模式：一句话讲清现在该干什么
+    renderNoviceHint() {
+      const el = document.getElementById('novice-hint');
+      const txt = document.getElementById('novice-hint-text');
+      if (!el || !txt) return;
+      if (!localUI.novice) { el.classList.add('is-hidden'); return; }
+      el.classList.remove('is-hidden');
+      const me = getSelfPlayer();
+      let msg = '';
+      if (state.phase === 'rps') msg = me && state.rps?.choices?.[me.id] ? '已出拳，等别人亮牌…' : '先出拳：赢了才有步数，平局会立刻重猜。';
+      else if (state.phase === 'initiative') msg = '赢了！抢「第一解释权」：决定自己第几个走。';
+      else if (state.phase === 'sub_rps') msg = '三局两胜，先赢两小局的人获胜。';
+      else if (state.phase === 'action') {
+        msg = state.activePlayerId === state.selfId
+          ? `轮到你了：用下面的按钮花掉 ${me?.steps ?? 0} 步，行动会自动记在地图上。`
+          : `看别人行动：地图卡上会实时记下谁做了什么。`;
+      } else if (state.phase === 'stealth_reveal') msg = '突袭者要现形了：他的暗步即将揭晓。';
+      else msg = '战局进行中。';
+      txt.textContent = msg;
     },
 
     renderLobby() {
@@ -4878,12 +5000,12 @@
       if (state.phase === 'stealth_reveal') {
         boxSub.classList.remove('is-hidden');
         if (state.activePlayerId !== self.id) {
-          boxSub.innerHTML = `<div class="subpanel-head"><span>👁 等待突袭者 ${escapeHtml(getPlayer(state.activePlayerId)?.name)} 揭晓量子暗步...</span></div>`;
+          boxSub.innerHTML = `<div class="subpanel-head"><span>等待 ${escapeHtml(getPlayer(state.activePlayerId)?.name || '…')} 揭晓</span></div>`;
           return;
         }
         const moves = getReachableMoveNodes(self);
         boxSub.innerHTML = `
-          <div class="subpanel-head"><span>👁 量子隐身揭晓：请从白名单选择你上回合的暗步</span></div>
+          <div class="subpanel-head"><span>暗步</span></div>
           <div class="action-btn-grid">
             <button class="pk-btn pk-btn--primary" data-stealth-act="draw_knife" type="button"><span class="btn-label">🔪 暗中拔刀</span></button>
             <button class="pk-btn pk-btn--primary" data-stealth-act="wear_pants" type="button" ${self.pants >= self.maxPants || (state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(self)) ? 'disabled' : ''}><span class="btn-label">👖 暗中穿裤</span></button>
@@ -4913,7 +5035,7 @@
         clearConfirmArm();
         boxAct.classList.remove('is-hidden');
         const activeP = getPlayer(state.activePlayerId);
-        boxAct.innerHTML = `<div>当前轮到 <strong>${escapeHtml(activeP?.name || '...')}</strong>（${escapeHtml(ROLE_MAP[activeP?.roleId]?.name || '')}）行动，请静候或使用右下角战术通讯密谋...</div>`;
+        boxAct.innerHTML = `<div>轮到 <strong>${escapeHtml(activeP?.name || '…')}</strong> · 等待</div>`;
         return;
       }
 
@@ -4931,69 +5053,69 @@
 
       const confirmBtn = (key, cls, quickAct, label) => {
         const isArmed = localUI.confirmArm?.key === key;
-        const text = isArmed ? `⚠ 再点确认 · ${label}` : label;
+        const text = isArmed ? '再点确认' : label;
         return `<button class="pk-btn ${cls} ${isArmed ? 'is-confirm-arm' : ''}" data-quick-act="${quickAct}" data-confirm-key="${key}" type="button"><span class="btn-label">${text}</span></button>`;
       };
 
       if (self.roleId === 'ninja' && !self.bladeReady) {
-        btns.push('<button class="pk-btn pk-btn--crimson" data-quick-act="blade_draw" type="button"><span class="btn-label">⚡ 弹刃 (解锁攻击)</span></button>');
+        btns.push('<button class="pk-btn pk-btn--crimson" data-quick-act="blade_draw" type="button"><span class="btn-label">弹刃</span></button>');
       }
-      if (self.bomb && enemiesHere.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="pass_bomb" type="button"><span class="btn-label">💣 免费过继炸弹</span></button>');
-      if (!self.parasiteHostId && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="move" type="button"><span class="btn-label">➤ 移动 / 带人</span></button>');
+      if (self.bomb && enemiesHere.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="pass_bomb" type="button"><span class="btn-label">过继💣</span></button>');
+      if (!self.parasiteHostId && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="move" type="button"><span class="btn-label">移动</span></button>');
       if (!self.parasiteHostId && curNode?.layer === 'land' && curNode.kind !== 'prison_in' && !self.ascendCharged && !hasSQ(self, 'SQ4')) {
-        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="charge_ascend" type="button"><span class="btn-label">☁ 升天蓄力 (解锁直飞)</span></button>');
+        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="charge_ascend" type="button"><span class="btn-label">升天</span></button>');
       }
-      if (!self.parasiteHostId && hasSQ(self, 'SQ2') && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq2_dash" type="button"><span class="btn-label">⚡ 利刃突进攻</span></button>');
-      if (hasSQ(self, 'SQ5')) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="sq5_magnet" type="button"><span class="btn-label">🧲 吸铁石夺刀</span></button>');
-      if (!self.parasiteHostId && hasSQ(self, 'SQ6') && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq6_hook" type="button"><span class="btn-label">🪝 钩爪强拉</span></button>');
+      if (!self.parasiteHostId && hasSQ(self, 'SQ2') && getReachableMoveNodes(self).length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq2_dash" type="button"><span class="btn-label">突进</span></button>');
+      if (hasSQ(self, 'SQ5')) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="sq5_magnet" type="button"><span class="btn-label">吸刀</span></button>');
+      if (!self.parasiteHostId && hasSQ(self, 'SQ6') && curNode?.kind !== 'prison_in' && !isBarrierActive(curNode?.id)) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="sq6_hook" type="button"><span class="btn-label">钩爪</span></button>');
 
       const canWear = self.pants < self.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land' && !isStormImmune(self));
-      btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="wear_pants" type="button" ${canWear ? '' : 'disabled'}><span class="btn-label">👖 穿裤</span></button>`);
-      btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="draw_knife" type="button"><span class="btn-label">🔪 拔刀</span></button>');
+      btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="wear_pants" type="button" ${canWear ? '' : 'disabled'}><span class="btn-label">穿裤</span></button>`);
+      btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="draw_knife" type="button"><span class="btn-label">拔刀</span></button>');
 
       const hasWardenHere = canAttackWardenFrom(curNode);
       if (enemiesHere.length > 0 || hasWardenHere) {
-        btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="strip_pants" type="button"><span class="btn-label">👖 扒裤</span></button>');
+        btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="strip_pants" type="button"><span class="btn-label">扒裤</span></button>');
         const ninjaLocked = self.roleId === 'ninja' && !self.bladeReady;
         if (canStabWithWeapon(self) || ninjaLocked) {
-          const stabTag = ninjaLocked ? '需先弹刃' : self.knives >= 1 ? '耗1刀' : '利刃斩';
-          btns.push(`<button class="pk-btn pk-btn--crimson" data-open-sub="stab" type="button" ${ninjaLocked ? 'disabled' : ''}><span class="btn-label">🔪 咔！(${stabTag})</span></button>`);
+          const stabTag = ninjaLocked ? '需先弹刃' : self.knives >= 1 ? '刀' : '利刃';
+          btns.push(`<button class="pk-btn pk-btn--crimson" data-open-sub="stab" type="button" ${ninjaLocked ? 'disabled' : ''}><span class="btn-label">咔</span></button>`);
         }
       }
-      if (enemiesHere.some((e) => e.knives > 0)) btns.push('<button class="pk-btn pk-btn--ghost" data-open-sub="steal_knife" type="button"><span class="btn-label">✋ 抢刀</span></button>');
-      if (enemiesHere.some((e) => needsPinchPigFace(self, e))) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="pinch_pigface" type="button"><span class="btn-label">🐷 捏猪脸</span></button>');
-      if (enemiesHere.some((e) => e.oxygenTank) && !self.oxygenTank) btns.push('<button class="pk-btn pk-btn--ghost" data-open-sub="steal_tank" type="button"><span class="btn-label">🫧 抢氧气瓶</span></button>');
+      if (enemiesHere.some((e) => e.knives > 0)) btns.push('<button class="pk-btn pk-btn--ghost" data-open-sub="steal_knife" type="button"><span class="btn-label">抢刀</span></button>');
+      if (enemiesHere.some((e) => needsPinchPigFace(self, e))) btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="pinch_pigface" type="button"><span class="btn-label">捏脸</span></button>');
+      if (enemiesHere.some((e) => e.oxygenTank) && !self.oxygenTank) btns.push('<button class="pk-btn pk-btn--ghost" data-open-sub="steal_tank" type="button"><span class="btn-label">抢氧</span></button>');
 
-      if (curNode && curNode.layer !== 'land') btns.push('<button class="pk-btn pk-btn--primary" data-quick-act="breathe" type="button"><span class="btn-label">💨 呼吸重置</span></button>');
+      if (curNode && curNode.layer !== 'land') btns.push('<button class="pk-btn pk-btn--primary" data-quick-act="breathe" type="button"><span class="btn-label">换气</span></button>');
       if (curNode && curNode.droppedArtifacts.length > 0) {
-        curNode.droppedArtifacts.forEach((sqId) => btns.push(`<button class="pk-btn pk-btn--accent" data-pickup-sq="${sqId}" type="button"><span class="btn-label">✨ 拾取 ${ARTIFACTS[sqId].short}</span></button>`));
+        curNode.droppedArtifacts.forEach((sqId) => btns.push(`<button class="pk-btn pk-btn--accent" data-pickup-sq="${sqId}" type="button"><span class="btn-label">拾 ${ARTIFACTS[sqId].short}</span></button>`));
       }
-      if (parasitesOnMe.length > 0) btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="shake_parasite" type="button"><span class="btn-label">💨 扒裤甩开寄生 (自身-0.5👖)</span></button>');
-      if (hiddenRaiders.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="predict_raider" type="button"><span class="btn-label">🎯 预判隐身突袭者</span></button>');
+      if (parasitesOnMe.length > 0) btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="shake_parasite" type="button"><span class="btn-label">甩寄生</span></button>');
+      if (hiddenRaiders.length > 0) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="predict_raider" type="button"><span class="btn-label">预判</span></button>');
 
       if (curNode?.kind === 'police') {
-        btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="police_arrest" type="button"><span class="btn-label">🚔 远程逮捕</span></button>');
-        btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="police_corpse" type="button"><span class="btn-label">🚑 搬尸 +0.5❤️</span></button>');
-        btns.push(confirmBtn('police_surrender', 'pk-btn--danger', 'police_surrender', '⛓ 自首入狱'));
+        btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="police_arrest" type="button"><span class="btn-label">逮捕</span></button>');
+        btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="police_corpse" type="button"><span class="btn-label">搬尸</span></button>');
+        btns.push(confirmBtn('police_surrender', 'pk-btn--danger', 'police_surrender', '自首'));
       } else if (curNode?.kind === 'blackmarket') {
         const isFreeBm = self.roleId === 'normal' && self.blackMarketFreeTurn !== state.turn;
-        btns.push(`<button class="pk-btn pk-btn--crimson" data-quick-act="blackmarket_draw" type="button"><span class="btn-label">🕶 抽恶魔契约 (${isFreeBm ? '0步免费!' : '8选3'})</span></button>`);
+        btns.push(`<button class="pk-btn pk-btn--crimson" data-quick-act="blackmarket_draw" type="button"><span class="btn-label">契约 ${isFreeBm ? '0步' : '8选3'}</span></button>`);
       } else if (curNode?.kind === 'aquarium' && !self.frogMask) {
-        btns.push(confirmBtn('equip_frog_mask', 'pk-btn--accent', 'equip_frog_mask', '🐸 戴青蛙面罩'));
+        btns.push(confirmBtn('equip_frog_mask', 'pk-btn--accent', 'equip_frog_mask', '面罩'));
       } else if (curNode?.kind === 'ruins') {
-        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="ruins_dig" type="button"><span class="btn-label">⛏ 遗迹挖掘 (25%→10 / 75%保底)</span></button>');
+        btns.push('<button class="pk-btn pk-btn--accent" data-quick-act="ruins_dig" type="button"><span class="btn-label">挖掘</span></button>');
       } else if (curNode?.kind === 'palace') {
-        btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="forge_artifact" type="button"><span class="btn-label">🔱 锻造龙宫神器</span></button>');
+        btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="forge_artifact" type="button"><span class="btn-label">锻造</span></button>');
       } else if (curNode?.kind === 'wish') {
-        btns.push(`<button class="pk-btn pk-btn--primary" data-quick-act="wish_step" type="button"><span class="btn-label">🌠 许愿池 (${self.wishSteps}/2)</span></button>`);
+        btns.push(`<button class="pk-btn pk-btn--primary" data-quick-act="wish_step" type="button"><span class="btn-label">许愿 ${self.wishSteps}/2</span></button>`);
       } else if (curNode?.kind === 'observatory') {
-        btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="set_weather" type="button"><span class="btn-label">🔭 改写下回合天象</span></button>');
+        btns.push('<button class="pk-btn pk-btn--primary" data-open-sub="set_weather" type="button"><span class="btn-label">天象</span></button>');
       }
 
       const skillBtn = UI.buildRoleSkillButton(self);
       if (skillBtn) btns.push(skillBtn);
 
-      const passLabel = hasSQ(self, 'SQ7') && self.steps > 0 ? '⏳ 沙漏存1步并结束' : '⏭ 结束行动';
+      const passLabel = hasSQ(self, 'SQ7') && self.steps > 0 ? '存步·结束' : '结束';
       if (self.steps > 0) {
         btns.push(confirmBtn('pass_with_steps', 'pk-btn--ghost', 'pass', passLabel));
       } else {
@@ -5004,14 +5126,14 @@
 
     buildRoleSkillButton(self) {
       if (self.parasiteHostId) {
-        return '<button class="pk-btn pk-btn--crimson" data-open-sub="skill_parasite_burst" type="button"><span class="btn-label">💥 0步破体而出 (咔+0.5伤)</span></button>';
+        return '<button class="pk-btn pk-btn--crimson" data-open-sub="skill_parasite_burst" type="button"><span class="btn-label">破体</span></button>';
       }
       const r = ROLE_MAP[self.roleId];
       if (!r || r.activeMax <= 0 || self.roleId === 'ninja') return '';
       const disabled = self.activeCharges <= 0 || isHypoxic(self) ? 'disabled' : '';
       const label = self.roleId === 'mirror'
-        ? `🪞 盗版(${self.activeCharges})${state.lastActiveSkill ? `:${state.lastActiveSkill.skillName}` : ':+1刀+0.5裤'}`
-        : `★ ${r.activeName} (${self.activeCharges})`;
+        ? `盗版(${self.activeCharges})${state.lastActiveSkill ? `:${state.lastActiveSkill.skillName}` : ':+1刀+0.5裤'}`
+        : `${r.activeName} (${self.activeCharges})`;
       return `<button class="pk-btn pk-btn--crimson" data-open-skill="${self.roleId}" type="button" ${disabled}><span class="btn-label">${escapeHtml(label)}</span></button>`;
     },
 
@@ -5026,7 +5148,7 @@
         if (pickingTargetFor) {
           const targets = state.players.filter((p) => isVisibleAlive(p) && p.id !== self.id && (!isFogBlockedFor(self) || p.location === self.location));
           box.innerHTML = `
-            <div class="subpanel-head"><span>选择黑市契约目标${isFogBlockedFor(self) ? ' (迷雾仅限同地点)' : ''}</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-back="1" type="button"><span class="btn-label">返回契约</span></button></div>
+            <div class="subpanel-head"><span>对谁</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-back="1" type="button"><span class="btn-label">返回契约</span></button></div>
             <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-bm-commit="${pickingTargetFor}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖)</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>
           `;
           return;
@@ -5037,7 +5159,7 @@
         }).join('');
         box.innerHTML = `
           <div class="subpanel-head">
-            <span>🕶 黑市恶魔契约（8 抽 3 选 1）</span>
+            <span>契约</span>
             <div>${pa.canFreeReroll ? '<button class="pk-btn pk-btn--accent pk-btn--sm" data-bm-reroll="1" type="button"><span class="btn-label">🔄 免费刷新</span></button>' : ''}<button class="pk-btn pk-btn--ghost pk-btn--sm" data-bm-cancel="1" type="button"><span class="btn-label">放弃</span></button></div>
           </div>
           <div class="contract-grid">${cards}</div>
@@ -5058,7 +5180,7 @@
             ? `<label class="pk-check"><input type="checkbox" data-restore-uid="NPC_WARDEN" ${selected.has('NPC_WARDEN') ? 'checked' : ''} /><span class="pk-check-box"></span><span class="pk-check-text">NPC 典狱长 (${escapeHtml(getNode(state.warden.locationId || 'land_prison_out')?.name || '监狱外')})</span></label>`
             : '';
           box.innerHTML = `
-            <div class="subpanel-head"><span>时空复原：勾选任意个单位复原至出生点（已选 ${selected.size}）</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
+            <div class="subpanel-head"><span>复原</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
             <div class="action-btn-grid" style="margin-bottom:8px;">${checks}${wardenCheck}</div>
             <button class="pk-btn pk-btn--crimson pk-btn--sm" data-wish-restore-confirm="1" type="button" ${selected.size === 0 ? 'disabled' : ''}><span class="btn-label">✨ 确认复原所选 (${selected.size}个单位)</span></button>
           `;
@@ -5071,7 +5193,7 @@
           }
           const pool = sub === 'revive' ? state.players.filter((p) => p.status !== 'alive' && p.status !== 'dead_final') : state.players.filter((p) => isVisibleAlive(p) && !isBarrierActive(p.location));
           box.innerHTML = `
-            <div class="subpanel-head"><span>选择许愿目标（${sub === 'revive' ? '复活' : '强送入狱'}）</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
+            <div class="subpanel-head"><span>${sub === 'revive' ? '复活谁' : '关谁'}</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
             <div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-wish-exec="${sub}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('') || '<span>无可选目标</span>'}</div>
           `;
           return;
@@ -5080,20 +5202,20 @@
           const alive = state.players.filter((p) => isVisibleAlive(p) && !isBarrierActive(p.location));
           const first = localUI.subPanelState?.wishFirst || null;
           box.innerHTML = `
-            <div class="subpanel-head"><span>空间置换：选择${first ? '第 2 名' : '第 1 名'}玩家</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
+            <div class="subpanel-head"><span>交换</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-wish-back="1" type="button"><span class="btn-label">返回</span></button></div>
             <div class="action-btn-grid">${alive.filter((p) => p.id !== first).map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-wish-swap="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('')}</div>
           `;
           return;
         }
-        box.innerHTML = `<div class="subpanel-head"><span>🌠 许愿池达成！请选择 1 项神迹</span></div><div class="action-btn-grid">${WISH_OPTIONS.map((w) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-wish-pick="${w.id}" type="button" title="${escapeHtml(w.desc)}"><span class="btn-label"><strong>${escapeHtml(w.name)}</strong><span class="btn-sub-line">${escapeHtml(w.shortDesc)}</span></span></button>`).join('')}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>许愿</span></div><div class="action-btn-grid">${WISH_OPTIONS.map((w) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-wish-pick="${w.id}" type="button" title="${escapeHtml(w.desc)}"><span class="btn-label"><strong>${escapeHtml(w.name)}</strong><span class="btn-sub-line">${escapeHtml(w.shortDesc)}</span></span></button>`).join('')}</div>`;
         return;
       }
 
       if (pa.type === 'ninja_chain') {
         const targets = Engine.getNinjaChainTargets(self);
         box.innerHTML = `
-          <div class="subpanel-head"><span>⚡ 忍者【瞬身连撞】：选择距离 1 单位撞击（1伤，撞死可连撞）</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-ninja-skip="1" type="button"><span class="btn-label">停止连撞</span></button></div>
-          <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-ninja-hit="${t.id}" type="button"><span class="btn-label">⚡ 撞击 ${escapeHtml(t.name)}（${escapeHtml(getNode(t.nodeId)?.name || '')}）</span></button>`).join('')}</div>
+          <div class="subpanel-head"><span>连撞</span><button class="pk-btn pk-btn--ghost pk-btn--sm" data-ninja-skip="1" type="button"><span class="btn-label">停止连撞</span></button></div>
+          <div class="action-btn-grid">${targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-ninja-hit="${t.id}" type="button"><span class="btn-label">撞击 ${escapeHtml(t.name)}</span></button>`).join('')}</div>
         `;
       }
     },
@@ -5117,13 +5239,12 @@
         const moves = getReachableMoveNodes(self);
         const carryable = enemiesHere.filter((e) => !e.parasiteHostId);
         const carryChecks = carryable.map((e) => {
-          const knifeBlocked = !hasCarryDeterrence(self) && hasCarryDeterrence(e);
-          const checked = (sub.carryIds || []).includes(e.id) && !knifeBlocked;
+          const checked = (sub.carryIds || []).includes(e.id);
           return `
-            <label class="pk-check ${knifeBlocked ? 'is-disabled' : ''}">
-              <input type="checkbox" data-carry-id="${e.id}" ${checked ? 'checked' : ''} ${knifeBlocked ? 'disabled' : ''} />
+            <label class="pk-check">
+              <input type="checkbox" data-carry-id="${e.id}" ${checked ? 'checked' : ''} />
               <span class="pk-check-box"></span>
-              <span class="pk-check-text">强带 ${escapeHtml(e.name)}${knifeBlocked ? ' [持刀不可带]' : needsPinchPigFace(self, e) ? ' [🐷需捏脸]' : ''}</span>
+              <span class="pk-check-text">强带 ${escapeHtml(e.name)}${needsPinchPigFace(self, e) ? ' 🐷' : ''}</span>
             </label>
           `;
         }).join('');
@@ -5152,7 +5273,7 @@
           return `<div class="move-group-row"><span class="move-group-label">${g.label}</span>${list.map((n) => renderDestBtn(n, g.cls)).join('')}</div>`;
         }).join('');
         box.innerHTML = `
-          <div class="subpanel-head"><span>➤ 选择目的地${carryable.length ? '（单次限强带 1 人）' : ''}</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>去哪</span>${closeBtn}</div>
           ${carryChecks ? `<div class="action-btn-grid" style="margin-bottom:6px;">${carryChecks}</div>` : ''}
           ${groups}
         `;
@@ -5161,7 +5282,7 @@
 
       if (sub.type === 'sq2_dash') {
         const ninjaLocked = self.roleId === 'ninja' && !self.bladeReady;
-        const weaponTag = self.knives >= 1 ? '耗1刀斩' : '利刃斩';
+        const weaponTag = self.knives >= 1 ? '刀' : '利刃';
         const isFromStable = curNode?.kind === 'stable';
         const combos = [];
         getReachableMoveNodes(self).forEach((n) => {
@@ -5186,7 +5307,7 @@
             combos.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-sq2-dest="${n.id}" data-sq2-target="NPC_WARDEN" type="button" ${ninjaLocked ? 'disabled' : ''}><span class="btn-label">⚡ 突进斩典狱长${noteW}</span></button>`);
           }
         });
-        box.innerHTML = `<div class="subpanel-head"><span>⚡ SQ2 利刃突进（享常驻小刀判定 · 马厩空降自动联动天马奇袭）</span>${closeBtn}</div><div class="action-btn-grid">${combos.join('')}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>突进 · 选目标</span>${closeBtn}</div><div class="action-btn-grid">${combos.join('')}</div>`;
         return;
       }
 
@@ -5251,17 +5372,17 @@
         }
 
         const fogNote = isRemoteAct && fogBlocked ? ' · 迷雾屏蔽跨点远程' : '';
-        box.innerHTML = `<div class="subpanel-head"><span>选择目标${fogNote}</span>${closeBtn}</div><div class="action-btn-grid">${items.join('') || '<span>暂无符合条件的目标</span>'}</div>${splitHtml}`;
+        box.innerHTML = `<div class="subpanel-head"><span>选目标</span>${closeBtn}</div><div class="action-btn-grid">${items.join('') || '<span>暂无符合条件的目标</span>'}</div>${splitHtml}`;
         return;
       }
 
       if (sub.type === 'predict_raider') {
         const raiders = state.players.filter((p) => p.status === 'alive' && p.stealth?.active && p.stealth.turnUsed < state.turn && p.id !== self.id);
         box.innerHTML = `
-          <div class="subpanel-head"><span>🎯 在【${escapeHtml(curNode?.name)}】预判隐身突袭者现身</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>预判</span>${closeBtn}</div>
           <div class="action-btn-grid">${raiders.map((r) => `
             <button class="pk-btn pk-btn--accent pk-btn--sm" data-predict="${r.id}" data-mode="strip" type="button"><span class="btn-label">预判扒裤 → ${escapeHtml(r.name)}</span></button>
-            ${canStabWithWeapon(self) ? `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-predict="${r.id}" data-mode="stab" type="button"><span class="btn-label">预判绝杀(${self.knives >= 1 ? '耗1刀' : '利刃'}) → ${escapeHtml(r.name)}</span></button>` : ''}
+            ${canStabWithWeapon(self) ? `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-predict="${r.id}" data-mode="stab" type="button"><span class="btn-label">预判绝杀(${self.knives >= 1 ? '刀' : '利刃'}) → ${escapeHtml(r.name)}</span></button>` : ''}
           `).join('')}</div>
         `;
         return;
@@ -5269,13 +5390,13 @@
 
       if (sub.type === 'forge_artifact') {
         const list = ALL_SQ_IDS.filter((id) => !state.artifacts[id].ownerId && !state.artifacts[id].droppedAt && !state.artifacts[id].destroyed);
-        box.innerHTML = `<div class="subpanel-head"><span>🔱 选择推进锻造的龙宫神器（8件常驻）</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-forge-sq="${id}" type="button" title="${escapeHtml(ARTIFACTS[id].desc)}"><span class="btn-label"><strong>${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</strong><span class="btn-sub-line">${escapeHtml(ARTIFACTS[id].shortDesc)}</span></span></button>`).join('') || '<span>八件神器已全部出世或毁灭</span>'}</div>`;
+        box.innerHTML = `<div class="subpanel-head"><span>锻造</span>${closeBtn}</div><div class="action-btn-grid">${list.map((id) => `<button class="pk-btn pk-btn--primary pk-btn--sm pk-btn--rich" data-forge-sq="${id}" type="button" title="${escapeHtml(ARTIFACTS[id].desc)}"><span class="btn-label"><strong>${ARTIFACTS[id].name} (${state.artifacts[id].progress}/${ARTIFACTS[id].stepsNeed})</strong><span class="btn-sub-line">${escapeHtml(ARTIFACTS[id].shortDesc)}</span></span></button>`).join('') || '<span>八件神器已全部出世或毁灭</span>'}</div>`;
         return;
       }
 
       if (sub.type === 'set_weather') {
         box.innerHTML = `
-          <div class="subpanel-head"><span>🔭 改写下回合天象（施法者独享主场特权）</span>${closeBtn}</div>
+          <div class="subpanel-head"><span>天象</span>${closeBtn}</div>
           <div class="action-btn-grid">
             <button class="pk-btn pk-btn--crimson pk-btn--sm pk-btn--rich" data-weather-pick="bloodmoon" type="button"><span class="btn-label"><strong>🩸 血月</strong><span class="btn-sub-line">全局伤+0.5 · 自己下回合初 +1🔪</span></span></button>
             <button class="pk-btn pk-btn--ghost pk-btn--sm pk-btn--rich" data-weather-pick="fog" type="button"><span class="btn-label"><strong>🌫 迷雾</strong><span class="btn-sub-line">禁跨点远程与坐标 · 仅自己豁免</span></span></button>
@@ -5290,17 +5411,17 @@
         if (effRole === 'parasite_burst') {
           const host = getPlayer(self.parasiteHostId);
           box.innerHTML = `
-            <div class="subpanel-head"><span>💥 0步破体而出 · 奇袭宿主 ${escapeHtml(host?.name || '')}</span>${closeBtn}</div>
+            <div class="subpanel-head"><span>破体</span>${closeBtn}</div>
             <div class="action-btn-grid">
               <button class="pk-btn pk-btn--accent" data-skill-exec="parasite_burst" data-burst="strip" type="button"><span class="btn-label">0步破体免费扒裤</span></button>
-              <button class="pk-btn pk-btn--crimson" data-skill-exec="parasite_burst" data-burst="stab" type="button" ${canStabWithWeapon(self) && host?.pants <= 0 ? '' : 'disabled'}><span class="btn-label">0步破体「咔」(+0.5伤 · ${self.knives >= 1 ? '耗1刀' : '利刃'})</span></button>
+              <button class="pk-btn pk-btn--crimson" data-skill-exec="parasite_burst" data-burst="stab" type="button" ${canStabWithWeapon(self) && host?.pants <= 0 ? '' : 'disabled'}><span class="btn-label">0步破体「咔」(+0.5伤 · ${self.knives >= 1 ? '刀' : '利刃'})</span></button>
             </div>
           `;
           return;
         }
         if (effRole === 'aquaman') {
           const oceanNodes = Object.values(state.nodes).filter((n) => n.layer === 'ocean' && !n.collapsed && n.id !== self.location && !isBarrierActive(n.id));
-          box.innerHTML = `<div class="subpanel-head"><span>🌊 深海潜行 · 选择潜入的海洋地点</span>${closeBtn}</div><div class="action-btn-grid">${oceanNodes.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-skill-node="${n.id}" type="button"><span class="btn-label">潜入 ${escapeHtml(n.name)}</span></button>`).join('') || '<span>暂无可潜入的海洋地点</span>'}</div>`;
+          box.innerHTML = `<div class="subpanel-head"><span>潜海</span>${closeBtn}</div><div class="action-btn-grid">${oceanNodes.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-skill-node="${n.id}" type="button"><span class="btn-label">潜入 ${escapeHtml(n.name)}</span></button>`).join('') || '<span>暂无可潜入的海洋地点</span>'}</div>`;
           return;
         }
         if (['chili', 'watcher', 'parasite'].includes(effRole)) {
@@ -5308,26 +5429,26 @@
           if (effRole !== 'parasite' && fogBlocked) pool = pool.filter((e) => e.location === self.location);
           if (effRole === 'watcher') pool = pool.filter((e) => e.location !== 'land_prison_in' && !isBarrierActive(e.location));
           const fogHint = effRole !== 'parasite' && fogBlocked ? ' (迷雾仅限同地点)' : '';
-          box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标${fogHint}</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
+          box.innerHTML = `<div class="subpanel-head"><span>${escapeHtml(ROLE_MAP[effRole].activeName)}</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
         }
         if (effRole === 'undertaker') {
           const souls = isUnderworldCollapsed() ? [] : state.players.filter((p) => p.status === 'pending_revive');
           const corpseNodes = Object.values(state.nodes).filter((n) => n.corpses.length > 0);
-          const soulBtns = souls.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">⚰ 封魂 ${escapeHtml(t.name)} (毁复活+0.5❤️)</span></button>`);
-          const corpseBtns = corpseNodes.map((n) => `<button class="pk-btn pk-btn--accent pk-btn--sm" data-skill-corpse-node="${n.id}" type="button"><span class="btn-label">🔥 烧尸【${escapeHtml(n.name)}】(${escapeHtml(n.corpses[0].name)} · +0.5❤️)</span></button>`);
-          box.innerHTML = `<div class="subpanel-head"><span>⚰ 封魂 · ${isUnderworldCollapsed() ? '地府已坍塌(无待复活者) · 远程烧尸回 +0.5❤️' : '销毁待复活资格或远程烧尸回 +0.5❤️'}</span>${closeBtn}</div><div class="action-btn-grid">${[...soulBtns, ...corpseBtns].join('') || '<span>场上暂无待复活者或尸体</span>'}</div>`;
+          const soulBtns = souls.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">封魂 ${escapeHtml(t.name)}</span></button>`);
+          const corpseBtns = corpseNodes.map((n) => `<button class="pk-btn pk-btn--accent pk-btn--sm" data-skill-corpse-node="${n.id}" type="button"><span class="btn-label">烧尸 ${escapeHtml(n.name)}</span></button>`);
+          box.innerHTML = `<div class="subpanel-head"><span>封魂</span>${closeBtn}</div><div class="action-btn-grid">${[...soulBtns, ...corpseBtns].join('') || '<span>场上暂无待复活者或尸体</span>'}</div>`;
           return;
         }
         if (effRole === 'barrier') {
           const validNodes = Object.values(state.nodes).filter((n) => !n.collapsed && n.kind !== 'prison_in');
-          box.innerHTML = `<div class="subpanel-head"><span>🔮 绝对领域 · 选择封锁地点至下回合末</span>${closeBtn}</div><div class="action-btn-grid">${validNodes.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-skill-node="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
+          box.innerHTML = `<div class="subpanel-head"><span>结界</span>${closeBtn}</div><div class="action-btn-grid">${validNodes.map((n) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-skill-node="${n.id}" type="button"><span class="btn-label">${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
           return;
         }
         if (effRole === 'curser') {
           const first = sub.firstTarget || null;
           const pool = state.players.filter((p) => isVisibleAlive(p) && p.id !== first && (!fogBlocked || p.location === self.location));
-          box.innerHTML = `<div class="subpanel-head"><span>🩸 命运链接 · 选择${first ? '第 2 名' : '第 1 名'}存活玩家${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
+          box.innerHTML = `<div class="subpanel-head"><span>链接</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-curser-pick="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
         }
         if (effRole === 'storm') {
@@ -5335,27 +5456,27 @@
             const singlePool = state.players.filter((p) => isVisibleAlive(p) && (!fogBlocked || p.location === self.location));
             const occupied = Object.values(state.nodes).filter((n) => !n.collapsed && n.kind !== 'prison_in' && getAlivePlayersAt(n.id).length > 0 && (!fogBlocked || n.id === self.location));
             box.innerHTML = `
-              <div class="subpanel-head"><span>🌪 乱流风暴 · 吹单人(免费) 或 吹全地点(1步)${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div>
+              <div class="subpanel-head"><span>风暴</span>${closeBtn}</div>
               <div class="action-btn-grid">${singlePool.map((t) => `<button class="pk-btn pk-btn--primary pk-btn--sm" data-storm-single="${t.id}" type="button"><span class="btn-label">免费吹 ${escapeHtml(t.name)}${escapeHtml(targetTags(t))}</span></button>`).join('')}</div>
               <div class="action-btn-grid" style="margin-top:6px;">${occupied.map((n) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-storm-node="${n.id}" type="button"><span class="btn-label">1步吹空【${escapeHtml(n.name)}】</span></button>`).join('')}</div>
             `;
           } else {
             const refNode = sub.stormSrcNode ? getNode(sub.stormSrcNode) : getNode(getPlayer(sub.stormTarget)?.location);
             const dests = Object.values(state.nodes).filter((n) => !n.collapsed && n.layer === refNode?.layer && n.id !== refNode?.id && n.kind !== 'prison_in' && !isBarrierActive(n.id));
-            box.innerHTML = `<div class="subpanel-head"><span>🌪 选择吹飞目的地（同层：${refNode?.layer.toUpperCase()}）</span>${closeBtn}</div><div class="action-btn-grid">${dests.map((n) => `<button class="pk-btn pk-btn--accent pk-btn--sm" data-storm-dest="${n.id}" type="button"><span class="btn-label">吹至 ${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
+            box.innerHTML = `<div class="subpanel-head"><span>吹去哪</span>${closeBtn}</div><div class="action-btn-grid">${dests.map((n) => `<button class="pk-btn pk-btn--accent pk-btn--sm" data-storm-dest="${n.id}" type="button"><span class="btn-label">吹至 ${escapeHtml(n.name)}</span></button>`).join('')}</div>`;
           }
           return;
         }
         if (effRole === 'puppeteer') {
           if (!sub.puppetTarget) {
             const sameLayer = aliveEnemies.filter((e) => getNode(e.location)?.layer === curNode?.layer && (!fogBlocked || e.location === self.location));
-            box.innerHTML = `<div class="subpanel-head"><span>🧵 提线木偶 · 选择同层级目标${fogBlocked ? ' (迷雾仅限同地点)' : ''}</span>${closeBtn}</div><div class="action-btn-grid">${sameLayer.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-puppet-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${escapeHtml(getNode(t.location)?.name || '')})</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
+            box.innerHTML = `<div class="subpanel-head"><span>木偶</span>${closeBtn}</div><div class="action-btn-grid">${sameLayer.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-puppet-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${escapeHtml(getNode(t.location)?.name || '')})</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           } else {
             const pt = getPlayer(sub.puppetTarget);
             const pMoves = pt && !pt.parasiteHostId ? getReachableMoveNodes(pt) : [];
             const pNeighbors = pt ? getAlivePlayersAt(pt.location, pt.id) : [];
             box.innerHTML = `
-              <div class="subpanel-head"><span>🧵 强控 ${escapeHtml(pt?.name)} 执行基础动作</span>${closeBtn}</div>
+              <div class="subpanel-head"><span>强控 ${escapeHtml(pt?.name)}</span>${closeBtn}</div>
               <div class="action-btn-grid">
                 <button class="pk-btn pk-btn--ghost pk-btn--sm" data-puppet-cmd="wear_pants" type="button"><span class="btn-label">强迫穿裤</span></button>
                 <button class="pk-btn pk-btn--ghost pk-btn--sm" data-puppet-cmd="draw_knife" type="button"><span class="btn-label">强迫拔刀</span></button>
@@ -5557,6 +5678,25 @@
         Net.broadcastState();
         UI.renderLobby();
       }
+    });
+
+    // 新手模式开关（大厅 + 局内）
+    on('opt-novice', 'change', (e) => setNovice(e.target.checked));
+    on('btn-toggle-novice-ingame', 'click', () => setNovice(!localUI.novice));
+    on('novice-hint-off', 'click', () => setNovice(false));
+
+    // 顶栏「更多」抽屉
+    const setHudMenu = (open) => {
+      localUI.hudMenuOpen = Boolean(open);
+      document.getElementById('hud-more')?.classList.toggle('is-hidden', !localUI.hudMenuOpen);
+      document.getElementById('btn-hud-menu')?.setAttribute('aria-expanded', String(localUI.hudMenuOpen));
+    };
+    on('btn-hud-menu', 'click', (e) => { e.stopPropagation(); setHudMenu(!localUI.hudMenuOpen); });
+    document.getElementById('hud-more')?.addEventListener('click', () => setHudMenu(false));
+    document.addEventListener('click', (e) => {
+      if (!localUI.hudMenuOpen) return;
+      if (e.target.closest('#hud-more') || e.target.closest('#btn-hud-menu')) return;
+      setHudMenu(false);
     });
 
     ['opt-collapse', 'opt-bounty', 'opt-vfx'].forEach((id) => {
@@ -5921,6 +6061,11 @@
   function init() {
     window.VFX?.init();
     Map3D.bind();
+    try {
+      const savedNovice = window.localStorage.getItem('lk_novice');
+      if (savedNovice === '0' || savedNovice === '1') localUI.novice = savedNovice === '1';
+    } catch (_) {}
+    syncNovice();
     bindEvents();
 
     const hint = document.querySelector('.map-drag-hint');

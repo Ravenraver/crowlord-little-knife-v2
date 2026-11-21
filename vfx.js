@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Little Knife (v2.4.6) — VFX & Web Audio Procedural Engine
+   Little Knife (v2.5) — VFX & Web Audio Procedural Engine
    - 猜拳平局改为「极速闪帧」（quick 模式，不震屏、不排队）
    - 默认播报节奏改为标准(2.4s)，并提供慢速 / 极速切换
    Global Namespace: window.VFX
@@ -9,9 +9,9 @@
   'use strict';
 
   const SPEED_PRESETS = {
-    slow:   { id: 'slow',   label: '慢速(3.8s)', bannerMs: 3800, actionPauseMs: 2200 },
-    normal: { id: 'normal', label: '标准(2.4s)', bannerMs: 2400, actionPauseMs: 1500 },
-    fast:   { id: 'fast',   label: '极速(1.2s)', bannerMs: 1200, actionPauseMs: 850 }
+    slow:   { id: 'slow',   label: '3.8s', bannerMs: 3800, actionPauseMs: 2200 },
+    normal: { id: 'normal', label: '2.4s', bannerMs: 2400, actionPauseMs: 1500 },
+    fast:   { id: 'fast',   label: '1.2s', bannerMs: 1200, actionPauseMs: 850 }
   };
 
   const state = {
@@ -958,7 +958,7 @@
     const btn = document.getElementById('btn-toggle-speed');
     if (btn) {
       const lbl = btn.querySelector('.btn-label');
-      if (lbl) lbl.textContent = `播报: ${SPEED_PRESETS[mode].label}`;
+      if (lbl) lbl.textContent = SPEED_PRESETS[mode].label;
     }
   }
 
@@ -1288,6 +1288,51 @@
     window.setTimeout(() => el.remove(), safeType === 'emoji' ? 2800 : 2500);
   }
 
+  // 动作砸在地点上：一个巨大的斜体动词，0.7 秒消失
+  function verbSlam({ nodeId, verb, targetNodeId = null, hot = false } = {}) {
+    if (!dom.mapOverlay || !verb || !state.enabled) return;
+    const pos = resolveNodeScreenPos(nodeId);
+    const rect = dom.mapOverlay.getBoundingClientRect();
+    const relX = Math.max(46, Math.min(rect.width - 46, pos.x - rect.left));
+    const relY = Math.max(34, Math.min(rect.height - 34, pos.y - rect.top - 44));
+
+    const el = document.createElement('div');
+    el.className = `vfx-verb${hot ? ' vfx-verb--hot' : ''}`;
+    el.textContent = verb;
+    el.style.left = `${relX}px`;
+    el.style.top = `${relY}px`;
+    dom.mapOverlay.appendChild(el);
+    window.setTimeout(() => el.remove(), 760);
+
+    if (targetNodeId && targetNodeId !== nodeId) actionLink(nodeId, targetNodeId, hot ? '#ff1e42' : '#00d4ff');
+  }
+
+  // 跨地点互动：两点之间拉一条带箭头的命中线
+  function actionLink(fromNodeId, toNodeId, color = '#00d4ff') {
+    if (!dom.mapOverlay || !state.enabled) return;
+    const a = resolveNodeScreenPos(fromNodeId);
+    const b = resolveNodeScreenPos(toNodeId);
+    const rect = dom.mapOverlay.getBoundingClientRect();
+    const ax = a.x - rect.left;
+    const ay = a.y - rect.top;
+    const bx = b.x - rect.left;
+    const by = b.y - rect.top;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    if (len < 24) return;
+
+    const el = document.createElement('div');
+    el.className = 'vfx-link';
+    el.style.left = `${ax}px`;
+    el.style.top = `${ay}px`;
+    el.style.width = `${len}px`;
+    el.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+    el.style.setProperty('--link-color', color);
+    dom.mapOverlay.appendChild(el);
+    window.setTimeout(() => el.remove(), 720);
+  }
+
   function tacticalFeed({ order = '', actor = '', action = '', target = '', result = '', highlight = false, text = '' } = {}) {
     if (!dom.tfeedBar) return;
     const mainStr = text || (target ? `${order ? order + ' ' : ''}${actor} ▸ ${action} ▸ ${target}` : `${order ? order + ' ' : ''}${actor} ▸ ${action}`);
@@ -1469,6 +1514,8 @@
     getRemainingBannerMs,
     rpsClash,
     floatOnNode,
+    verbSlam,
+    actionLink,
     toast,
     sfx
   };

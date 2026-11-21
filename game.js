@@ -89,7 +89,7 @@
 
     { id: 'land_police', name: '警察局', layer: 'land', x: 24, y: 24, kind: 'police', collapsible: true, desc: '1步远程三局两胜逮捕；1步搬尸回 +0.5 HP；1步自首入狱。' },
     { id: 'land_prison_out', name: '监狱外', layer: 'land', x: 50, y: 20, kind: 'prison_out', collapsible: true, desc: '常驻无限刷新 NPC 典狱长（3裤1命），击杀后狱内全员立刻释放！' },
-    { id: 'land_prison_in', name: '监狱内', layer: 'land', x: 74, y: 20, kind: 'prison_in', collapsible: false, desc: '与外界物理隔离。等待外界击杀典狱长，或借海王水遁越狱。' },
+    { id: 'land_prison_in', name: '监狱内', layer: 'land', x: 74, y: 20, kind: 'prison_in', collapsible: false, desc: '与外界物理隔离。可直接扒/咔典狱长自行越狱，或等待外界劫狱、海王水遁逃生。' },
     { id: 'land_dock', name: '码头', layer: 'land', x: 22, y: 76, kind: 'dock', collapsible: true, desc: '耗 1 步下海前往水族馆、遗迹或龙宫。' },
     { id: 'land_blackmarket', name: '黑市', layer: 'land', x: 52, y: 78, kind: 'blackmarket', collapsible: true, desc: '耗 1 步不猜拳，随机抽取 3 份恶魔契约择一签下（或放弃）。' },
     { id: 'land_underworld', name: '地府', layer: 'land', x: 80, y: 74, kind: 'underworld', collapsible: true, desc: '普通陆地地点（活人可堵门），也是阵亡者赢拳复活后的出生之地。' },
@@ -914,6 +914,10 @@
     return Boolean(n && n.barrierUntilTurn >= state.turn);
   }
   function getNode(nodeId) { return state.nodes[nodeId] || null; }
+
+  function canAttackWardenFrom(node) {
+    return Boolean(node && (node.kind === 'prison_out' || node.kind === 'prison_in') && !state.nodes.land_prison_out?.collapsed);
+  }
 
   function hasSQ(player, sqId) {
     if (!player) return false;
@@ -1972,7 +1976,8 @@
         if (actor.steps < 1) return;
         const power = hasSQ(actor, 'SQ1') ? 2 : 1;
         if (intent.targetId === 'NPC_WARDEN') {
-          if (curNode?.kind !== 'prison_out' || state.warden.pants <= 0) return;
+          if (!canAttackWardenFrom(curNode)) return;
+          if (state.warden.pants <= 0) { window.VFX?.toast('典狱长已 0 裤，持刀直接「咔」！', 'warn'); return; }
           actor.steps -= 1;
           const before = state.warden.pants;
           state.warden.pants = Math.max(0, roundHalf(state.warden.pants - power));
@@ -1998,7 +2003,8 @@
         if (actor.steps < 1 || actor.knives < 1) return;
         const dmg = Engine.calcStabDamage(actor);
         if (intent.targetId === 'NPC_WARDEN') {
-          if (curNode?.kind !== 'prison_out' || state.warden.pants > 0) return;
+          if (!canAttackWardenFrom(curNode)) return;
+          if (state.warden.pants > 0) { window.VFX?.toast('典狱长还有裤子，必须先扒至 0 裤才能「咔」！', 'warn'); return; }
           actor.steps -= 1;
           Engine.damageWarden(actor, dmg);
           Engine.finishCurrentActorIfDone(actor);
@@ -2593,8 +2599,9 @@
           list.push({ id: p.id, name: p.name, nodeId: p.location, isWarden: false });
         }
       });
-      if (reachableIds.has('land_prison_out') && !state.nodes.land_prison_out?.collapsed) {
-        list.push({ id: 'NPC_WARDEN', name: 'NPC 典狱长', nodeId: 'land_prison_out', isWarden: true });
+      const actorNode = getNode(actor.location);
+      if ((reachableIds.has('land_prison_out') || actorNode?.kind === 'prison_in') && !state.nodes.land_prison_out?.collapsed) {
+        list.push({ id: 'NPC_WARDEN', name: 'NPC 典狱长', nodeId: actorNode?.kind === 'prison_in' ? 'land_prison_in' : 'land_prison_out', isWarden: true });
       }
       return list;
     },
@@ -3225,6 +3232,13 @@
         return;
       }
 
+      if (curNode?.kind === 'prison_in' && canAttackWardenFrom(curNode) && moves.length === 0) {
+        if (state.warden.pants > 0) { Engine.executePlayerAction(actor.id, { action: 'strip_pants', targetId: 'NPC_WARDEN' }); return; }
+        if (actor.knives >= 1) { Engine.executePlayerAction(actor.id, { action: 'stab', targetId: 'NPC_WARDEN' }); return; }
+        Engine.executePlayerAction(actor.id, { action: 'draw_knife' });
+        return;
+      }
+
       if (actor.knives === 0 && Math.random() < 0.6) { Engine.executePlayerAction(actor.id, { action: 'draw_knife' }); return; }
       if (actor.pants < actor.maxPants && !(state.weather === 'storm' && curNode?.layer === 'land') && Math.random() < 0.55) {
         Engine.executePlayerAction(actor.id, { action: 'wear_pants' });
@@ -3729,7 +3743,7 @@
       btns.push(`<button class="pk-btn pk-btn--ghost" data-quick-act="wear_pants" type="button" ${canWear ? '' : 'disabled'}><span class="btn-label">👖 穿裤</span></button>`);
       btns.push('<button class="pk-btn pk-btn--ghost" data-quick-act="draw_knife" type="button"><span class="btn-label">🔪 拔刀</span></button>');
 
-      const hasWardenHere = curNode?.kind === 'prison_out' && !curNode.collapsed;
+      const hasWardenHere = canAttackWardenFrom(curNode);
       if (enemiesHere.length > 0 || hasWardenHere) {
         btns.push('<button class="pk-btn pk-btn--accent" data-open-sub="strip_pants" type="button"><span class="btn-label">👖 扒裤</span></button>');
         if (self.knives >= 1) btns.push('<button class="pk-btn pk-btn--crimson" data-open-sub="stab" type="button"><span class="btn-label">🔪 咔！（绝杀）</span></button>');
@@ -3886,7 +3900,7 @@
         if (sub.type === 'steal_tank') targets = targets.filter((e) => e.oxygenTank);
 
         const items = targets.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-target-act="${sub.type}" data-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)} (${t.pants}👖 / ${t.hp}❤️)</span></button>`);
-        if ((sub.type === 'strip_pants' || sub.type === 'stab') && curNode?.kind === 'prison_out' && !curNode.collapsed) {
+        if ((sub.type === 'strip_pants' || sub.type === 'stab') && canAttackWardenFrom(curNode)) {
           items.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-target-act="${sub.type}" data-target="NPC_WARDEN" type="button"><span class="btn-label">NPC 典狱长 (${state.warden.pants}👖/${state.warden.hp}❤️)</span></button>`);
         }
         box.innerHTML = `<div class="subpanel-head"><span>选择目标</span>${closeBtn}</div><div class="action-btn-grid">${items.join('') || '<span>暂无符合条件的目标</span>'}</div>`;

@@ -32,7 +32,7 @@
 
   <!-- ==================== 视图一：大厅界面 ==================== -->
   <main id="screen-lobby" class="screen is-active">
-    <div class="bg-deco-num" aria-hidden="true">17</div>
+    <div class="bg-deco-num" aria-hidden="true">16</div>
     <div class="bg-deco-slash" aria-hidden="true"></div>
 
     <header class="lobby-header">
@@ -152,12 +152,12 @@
         </div>
       </div>
 
-      <!-- 右侧：17 角色 Persona 档案选择区 -->
+      <!-- 右侧：16 角色 Persona 档案选择区 -->
       <div class="lobby-col-right">
         <div class="pk-panel panel-dossier">
           <div class="dossier-toolbar">
             <div id="role-filter-tabs" class="role-tabs" role="tablist" aria-label="角色定位筛选">
-              <button class="role-tab is-active" data-filter="all" type="button"><span>全部 17</span></button>
+              <button class="role-tab is-active" data-filter="all" type="button"><span>全部 16</span></button>
               <button class="role-tab" data-filter="assassin" type="button"><span>刺客</span></button>
               <button class="role-tab" data-filter="control" type="button"><span>控场</span></button>
               <button class="role-tab" data-filter="trick" type="button"><span>诡计</span></button>
@@ -215,8 +215,16 @@
       </div>
     </header>
 
+    <!-- 手机竖屏专属：常驻最新 2 条高亮战报 + 三标签瞬切栏 -->
+    <div id="mobile-live-ticker" class="mobile-live-ticker" title="点击切换至完整战报"></div>
+    <nav id="mobile-stage-tabs" class="mobile-stage-tabs" aria-label="视图切换">
+      <button class="m-tab is-active" data-mtab="map" type="button">🗺 地图</button>
+      <button class="m-tab" data-mtab="players" type="button">👥 玩家</button>
+      <button class="m-tab" data-mtab="log" type="button">📜 战报 <span id="mobile-log-badge" class="m-tab-badge is-hidden">0</span></button>
+    </nav>
+
     <!-- 对局主体三栏工作区 -->
-    <div class="game-workspace">
+    <div class="game-workspace" data-mobile-tab="map">
       <!-- 左栏：全员状态监控 -->
       <aside id="panel-players" class="pk-panel panel-players">
         <div class="panel-deco-tag">AGENTS // STATUS</div>
@@ -336,7 +344,7 @@
         <div class="guide-step is-active" data-step="0">
           <div class="guide-step-num">01</div>
           <h4>猜拳抢步 · 解释权博弈</h4>
-          <p>每回合全员猜拳（平局重猜），胜者得 <strong>1 步</strong>（常规步数不跨回合攒）。多人同时赢拳时，胜者再猜一次抢「第一解释权」，第一名自由挑选第几个行动，决定先手压制还是后手收割。</p>
+          <p>每回合全员猜拳（平局重猜），<strong>赢几个人就得几步</strong>（例：4人局2布赢2石头，出布者各获 <strong>2 步</strong>；常规步数不跨回合攒）。多人同时赢拳时，胜者再猜一次抢「第一解释权」，第一名自由挑选行动顺位。</p>
           <div class="guide-tip">核心击杀链：同地点<strong>扒裤</strong>（无需刀，目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>造成致命伤！移动可免费强行带走同地点任意人。</div>
         </div>
 
@@ -349,8 +357,8 @@
 
         <div class="guide-step" data-step="2">
           <div class="guide-step-num">03</div>
-          <h4>17 角色联动 · 通缉与坍塌</h4>
-          <p>17 位角色分为<strong>刺客 / 控场 / 诡计 / 生存</strong>四系，从量子隐身预判、寄生爆体、提线强控到结界隔绝，每位角色都能改写战局规则。</p>
+          <h4>16 角色联动 · 通缉与坍塌</h4>
+          <p>16 位角色分为<strong>刺客 / 控场 / 诡计 / 生存</strong>四系，从量子隐身预判、寄生爆体、提线强控到结界隔绝，每位角色都能改写战局规则。</p>
           <p>持 ≥2 龙宫神器或击杀 ≥2 人将触发<strong>全服通缉</strong>（击杀通缉犯回 +1 命且下回合保底 1 步）；第 10 回合起地图每回合永久坍塌 1 个非出生点，逼入最终血战！</p>
         </div>
       </div>
@@ -395,7 +403,7 @@
         </div>
         <div class="config-item">
           <label for="cfg-ai-delay">AI 决策延迟 (ms)</label>
-          <input id="cfg-ai-delay" class="pk-input pk-input--sm" type="number" min="250" max="2500" step="50" value="850" />
+          <input id="cfg-ai-delay" class="pk-input pk-input--sm" type="number" min="400" max="3500" step="100" value="1600" />
         </div>
 
         <div class="config-switches">

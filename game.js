@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Little Knife (v2.0) — Complete Unified Game Engine, 17-Role State Machine,
+   Little Knife (v2.0) — Complete Unified Game Engine, 16-Role State Machine,
    3D Map Controller, PeerJS Authority Netcode & Tactical Comms (Audited Final)
    Global Namespace: window.LK
    ========================================================================== */
@@ -12,7 +12,7 @@
   const UI = {};
 
   // ========================================================================
-  // 1. Static Configuration Tables (AI Names, Weather, Artifacts, Contracts, 17 Roles)
+  // 1. Static Configuration Tables (AI Names, Weather, Artifacts, Contracts, 16 Roles)
   // ========================================================================
   const AI_NAMES = [
     '御坂美琴', '五条悟', '夜神月', '椎名真白',
@@ -72,12 +72,11 @@
     { id: 'ninja', num: '09', name: '忍者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0, maxPants: 0, knives: 0, atkMult: 1, activeMax: 2, activeCost: 0, activeName: '瞬身连撞', activeDesc: '斩杀任意单位后，可消耗1次技能免费向距离1（1步可达）的另1单位突进撞击，造成1伤（先扣裤，0裤扣命）；若撞死可再次消耗次数连撞！', passiveName: '自带利刃', passiveDesc: '开局自带独立 SQ2 利刃（不占龙宫且死亡不掉落），高机动无裤刺客。', brief: '自带 SQ2 利刃 + 斩杀瞬身连撞' },
     { id: 'puppeteer', num: '10', name: '操偶师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '提线木偶', activeDesc: '耗1步强控同层级1名存活玩家，令其立刻执行1次基础动作（单人移动 / 穿裤 / 拔刀 / 同地点扒裤）。', passiveName: '丝线操纵', passiveDesc: '可借敌之手扒裤、把敌人拉出掩体或送进绝境。', brief: '远程强控同层目标执行动作' },
     { id: 'parasite', num: '11', name: '寄生者', arch: 'assassin', archName: '刺客', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '寄生', activeDesc: '同地点耗1步附身目标，免费随行并共享氧气/青蛙面罩；宿主花1步扒裤可甩开；宿主掉血/死亡则震出并清裤，入狱连坐；附身态可花1步破体而出并免费扒/咔宿主。', passiveName: '破体奇袭', passiveDesc: '借壳蹭车蹭氧，择机破体斩杀宿主。', brief: '贴脸附身蹭车 + 破体免费扒/咔' },
-    { id: 'gambler', num: '12', name: '老千', arch: 'trick', archName: '诡计', hp: 1, pants: 0.5, maxPants: 1, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '梭哈', activeDesc: '同地点耗1步发起一局定胜负猜拳：胜者任夺对方 1 刀 / 1 裤 / 1 件龙宫神器；若老千输则自身裤清零且被夺 1 刀或神器。', passiveName: '庄家特权', passiveDesc: '多人同时获步时自动拿到「第一解释权」（多名老千获步时仅老千之间互猜）。', brief: '自动抢第一解释权 + 贴脸豪赌夺宝' },
-    { id: 'mirror', num: '13', name: '镜像师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '盗版', activeDesc: '耗1步复刻并立刻释放本局上一个被使用的主动技（若尚无人使用主动技，则直接 +1 刀 +0.5 裤）。', passiveName: '无限反射', passiveDesc: '以彼之道还施彼身，根据战局动态复制最强控制或爆发。', brief: '复制本局上一个主动技即时释放' },
-    { id: 'reverser', num: '14', name: '逆转者', arch: 'trick', archName: '诡计', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '越输越强，一朝翻盘打出多步连击终结战场。', passiveName: '蓄势逆转', passiveDesc: '每输 1 轮猜拳存储 1 层「势」（上限 2 层）；赢拳时自动引爆全部势，本回合额外多走对应步数。', brief: '输拳攒势，赢拳爆发最高 3 连步' },
-    { id: 'barrier', num: '15', name: '结界师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '绝对领域', activeDesc: '耗1步远程封锁任意非狱内地点直至下回合末，内外彻底隔绝（无视水遁、云梯、风暴与进出移动）。', passiveName: '空间锁死', passiveDesc: '可将关键地点变作孤岛，瓮中捉鳖或锁死海空缺氧者。', brief: '远程绝对封锁地点至下回合末' },
-    { id: 'curser', num: '16', name: '诅咒师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '命运链接', activeDesc: '耗1步远程绑定任意 2 名存活玩家持续 2 回合，期间一方扣裤或扣血时另一方同步承受同等代价。', passiveName: '血咒共振', passiveDesc: '强行制造双人共死困局，令肉盾与通缉犯无处可逃。', brief: '绑定 2 人共担扣裤与伤害 2 回合' },
-    { id: 'undertaker', num: '17', name: '收尸人', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '封魂', activeDesc: '耗1步远程销毁 1 名处于待地府复活状态玩家的复活资格（令其直接死透），并回复自身 +0.5 命。', passiveName: '敛尸成刃', passiveDesc: '场上每有 1 名玩家阵亡，自身自动获得 +1 刀。', brief: '死人自动加刀 + 远程掐灭地府复活' }
+    { id: 'mirror', num: '12', name: '镜像师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '盗版', activeDesc: '耗1步复刻并立刻释放本局上一个被使用的主动技（若尚无人使用主动技，则直接 +1 刀 +0.5 裤）。', passiveName: '无限反射', passiveDesc: '以彼之道还施彼身，根据战局动态复制最强控制或爆发。', brief: '复制本局上一个主动技即时释放' },
+    { id: 'reverser', num: '13', name: '逆转者', arch: 'trick', archName: '诡计', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 0, activeCost: 0, activeName: '无主动技', activeDesc: '越输越强，一朝翻盘打出多步连击终结战场。', passiveName: '蓄势逆转', passiveDesc: '每输 1 轮猜拳存储 1 层「势」（上限 2 层）；赢拳时自动引爆全部势，本回合额外多走对应步数。', brief: '输拳攒势，赢拳爆发最高 3 连步' },
+    { id: 'barrier', num: '14', name: '结界师', arch: 'control', archName: '控场', hp: 1, pants: 0.5, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '绝对领域', activeDesc: '耗1步远程封锁任意非狱内地点直至下回合末，内外彻底隔绝（无视水遁、云梯、风暴与进出移动）。', passiveName: '空间锁死', passiveDesc: '可将关键地点变作孤岛，瓮中捉鳖或锁死海空缺氧者。', brief: '远程绝对封锁地点至下回合末' },
+    { id: 'curser', num: '15', name: '诅咒师', arch: 'trick', archName: '诡计', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '命运链接', activeDesc: '耗1步远程绑定任意 2 名存活玩家持续 2 回合，期间一方扣裤或扣血时另一方同步承受同等代价。', passiveName: '血咒共振', passiveDesc: '强行制造双人共死困局，令肉盾与通缉犯无处可逃。', brief: '绑定 2 人共担扣裤与伤害 2 回合' },
+    { id: 'undertaker', num: '16', name: '收尸人', arch: 'survival', archName: '生存', hp: 1, pants: 1, maxPants: 1.5, knives: 0, atkMult: 1, activeMax: 2, activeCost: 1, activeName: '封魂', activeDesc: '耗1步远程销毁 1 名处于待地府复活状态玩家的复活资格（令其直接死透），并回复自身 +0.5 命。', passiveName: '敛尸成刃', passiveDesc: '场上每有 1 名玩家阵亡，自身自动获得 +1 刀。', brief: '死人自动加刀 + 远程掐灭地府复活' }
   ];
 
   const ROLE_MAP = Object.fromEntries(ROLES.map((r) => [r.id, r]));
@@ -112,7 +111,7 @@
     bountyArtifacts: 2,
     bountyKills: 2,
     oxygenMax: 5,
-    aiDelayMs: 850,
+    aiDelayMs: 1600,
     vfxEnabled: true
   };
 
@@ -168,6 +167,9 @@
     activeModal: null,
     guideStep: 0,
     subPanelState: null,
+    mobileTab: 'map',
+    unreadLogCount: 0,
+    lastLogCount: 0,
     pendingTimers: []
   };
 
@@ -200,6 +202,18 @@
 
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function formatLogHtml(rawText) {
+    let s = escapeHtml(rawText);
+    s = s.replace(/(【[^】]+】)/g, '<span class="hl-loc">$1</span>');
+    s = s.replace(/([+-]?\d+(?:\.\d+)?(?:❤️|命))/g, (m) =>
+      m.startsWith('+') ? `<span class="hl-heal">${m}</span>` : `<span class="hl-dmg">${m}</span>`
+    );
+    s = s.replace(/([+-]?\d+(?:\.\d+)?(?:👖|裤))/g, '<span class="hl-pants">$1</span>');
+    s = s.replace(/((?:各)?\+\d+(?:步|🔪|刀))/g, '<span class="hl-step">$1</span>');
+    s = s.replace(/(阵亡|死透|通缉|坍塌|自爆|入狱|复活|麻痹|绝杀|闪避|MISS|越狱)/g, '<span class="hl-alert">$1</span>');
+    return s;
   }
 
   function addLog(text, kind = 'normal') {
@@ -268,7 +282,7 @@
       bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 4),
       bountyKills: clamp(Number(g('cfg-bounty-kills')?.value) || 2, 1, 6),
       oxygenMax: clamp(Number(g('cfg-oxygen-max')?.value) || 5, 3, 10),
-      aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 850, 250, 2500),
+      aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 1600, 400, 3500),
       vfxEnabled: g('opt-vfx') ? g('opt-vfx').checked : true
     };
   }
@@ -1101,8 +1115,8 @@
     const meets = countPalaceArtifacts(player) >= state.config.bountyArtifacts || player.kills >= state.config.bountyKills;
     if (meets && !player.wanted) {
       player.wanted = true;
-      addLog(`🚨 全服通缉触发！【${player.name}】成为头号悬赏目标！击杀者 +1 命且下回合保底 1 步！`, 'system');
-      emitFx('banner', { kicker: 'WANTED // 全服通缉', title: `${player.name} 悬赏生效`, sub: '击杀通缉犯回 +1 命并下回合保底 1 步', mood: 'p5r', durationMs: 1350 });
+      addLog(`🚨 ${player.name} 触发通缉！（击杀回+1命+保底1步）`, 'system');
+      emitFx('banner', { kicker: 'WANTED // 全服通缉', title: `${player.name} 悬赏生效`, sub: '击杀通缉犯回 +1 命并下回合保底 1 步', mood: 'p5r', durationMs: 2400 });
       emitFx('sfx', { name: 'alarm' });
       syncMoodFromState();
     }
@@ -1146,7 +1160,7 @@
 
     const tNode = getNode(target.location);
     if (opts.canDodge && tNode && tNode.kind === 'ruins' && Math.random() < 0.5) {
-      addLog(`💨 ${target.name} 借助【遗迹】地形触发 50% 闪避，完美躲开攻击！`, 'skill');
+      addLog(`💨 ${target.name} 【遗迹】MISS 闪避！`, 'skill');
       emitFx('float', { nodeId: target.location, text: 'MISS!', kind: 'miss' });
       emitFx('sfx', { name: 'miss' });
       return { hit: false, killed: false, dodged: true };
@@ -1154,7 +1168,7 @@
 
     if (target.shield > 0 && !opts.ignoreShield) {
       target.shield -= 1;
-      addLog(`🛡 ${target.name} 的黑市护盾抵消了本次致命伤害！`, 'skill');
+      addLog(`🛡 ${target.name} 护盾抵消伤害`, 'skill');
       emitFx('float', { nodeId: target.location, text: 'SHIELD!', kind: 'skill' });
       emitFx('sfx', { name: 'miss' });
       return { hit: false, killed: false, blocked: true };
@@ -1222,7 +1236,7 @@
       if (victim.wanted && state.config.bountyEnabled) {
         killer.hp = roundHalf(killer.hp + 1);
         killer.guaranteedStepNextTurn = true;
-        addLog(`🏆 ${killer.name} 终结通缉犯 ${victim.name}！回 +1 命且下回合保底获得 1 步！`, 'system');
+        addLog(`🏆 ${killer.name} 终结通缉犯 ${victim.name}（+1命/保底+1步）`, 'system');
         emitFx('float', { nodeId: killer.location, text: '+1❤️ 保底1步', kind: 'heal' });
       }
       updateBountyStatus(killer);
@@ -1241,10 +1255,10 @@
       victim.status = 'pending_revive';
       victim.reviveEligibleTurn = state.turn + 1;
       victim.location = getSafeReviveNodeId(victim);
-      addLog(`💀 ${victim.name} ${reason}！${dropped.length ? `掉落龙宫神器【${dropped.join('、')}】。` : ''}魂归地府，下回合可参与 1 轮复活猜拳！`, 'kill');
+      addLog(`💀 ${victim.name} 阵亡（${reason}）${dropped.length ? ` 掉【${dropped.join('、')}】` : ''} · 下回地府复活`, 'kill');
     } else {
       victim.status = 'dead_final';
-      addLog(`☠ ${victim.name} ${reason}（已无复活机会，彻底死透）！${dropped.length ? `掉落神器【${dropped.join('、')}】。` : ''}`, 'kill');
+      addLog(`☠ ${victim.name} 死透（${reason}）${dropped.length ? ` 掉【${dropped.join('、')}】` : ''}`, 'kill');
     }
 
     emitFx('banner', {
@@ -1252,7 +1266,7 @@
       title: `${victim.name} 阵亡`,
       sub: victim.status === 'pending_revive' ? '魂归地府 · 下回合可拼 1 次复活猜拳' : '已彻底死透出局',
       mood: 'p5r',
-      durationMs: 1200
+      durationMs: 2150
     });
     syncMoodFromState();
   }
@@ -1295,7 +1309,7 @@
       title: `${p.name} 复活归来`,
       sub: viaWish ? '许愿池召回（1裤1命）' : '全状态重置 · 全场须重新捏猪脸',
       mood: 'p3r',
-      durationMs: 1150
+      durationMs: 2100
     });
     emitFx('float', { nodeId: spawnId, text: 'REVIVED!', kind: 'heal' });
     emitFx('sfx', { name: 'revive' });
@@ -1334,6 +1348,8 @@
       state.recentFx = [];
       localUI.lastFxSeqPlayed = 0;
       localUI.subPanelState = null;
+      localUI.unreadLogCount = 0;
+      localUI.lastLogCount = 0;
 
       state.warden = { hp: 1, pants: 3, maxPants: 3, respawnCount: 0 };
       state.artifacts = {
@@ -1364,10 +1380,10 @@
       });
 
       state.nodes = buildMatchNodes(state.players);
-      addLog(`⚔ 对局开始！共 ${state.players.length} 名特工进入三层战场。`, 'system');
+      addLog(`⚔ 对局开始 · ${state.players.length}人混战`, 'system');
       emitFx('weather', { weather: 'clear' });
       emitFx('mood', { mood: 'p3r' });
-      emitFx('banner', { kicker: 'MISSION START', title: 'LITTLE KNIFE', sub: `${state.players.length} 人混战开幕 · 猜拳夺步`, mood: 'p3r', durationMs: 1200 });
+      emitFx('banner', { kicker: 'MISSION START', title: 'LITTLE KNIFE', sub: `${state.players.length} 人混战开幕 · 猜拳夺步`, mood: 'p3r', durationMs: 2150 });
 
       Engine.beginNextTurn();
     },
@@ -1395,8 +1411,8 @@
 
       if (state.weather !== 'clear') {
         const wMeta = WEATHERS[state.weather];
-        addLog(`🌌 本回合天象切换为【${wMeta.name}】：${wMeta.desc}`, 'system');
-        emitFx('banner', { kicker: 'WEATHER SHIFT // 天象降临', title: wMeta.name, sub: wMeta.desc, mood: wMeta.mood, durationMs: 1250 });
+        addLog(`🌌 天象【${wMeta.name}】：${wMeta.desc}`, 'system');
+        emitFx('banner', { kicker: 'WEATHER SHIFT // 天象降临', title: wMeta.name, sub: wMeta.desc, mood: wMeta.mood, durationMs: 2200 });
       }
 
       state.links = state.links.filter((lk) => lk.expiresTurn >= state.turn);
@@ -1408,7 +1424,7 @@
         p.paralyzed = Boolean(p.paralyzedNextTurn);
         p.paralyzedNextTurn = false;
         if (p.status === 'alive' && p.paralyzed) {
-          addLog(`⚡ ${p.name} 本回合处于麻痹状态，无法行动！`, 'skill');
+          addLog(`⚡ ${p.name} 麻痹，本回合跳过`, 'skill');
         }
       });
 
@@ -1477,21 +1493,28 @@
         winners = state.rps.participants.filter((pid) => state.rps.choices[pid] === winHand);
       }
 
+      const losersCount = isDraw ? 0 : Math.max(1, state.rps.participants.length - winners.length);
+
       const entries = state.rps.participants.map((pid) => {
         const p = getPlayer(pid);
         const h = state.rps.choices[pid];
         const outcome = isDraw ? 'draw' : winners.includes(pid) ? 'win' : 'lose';
-        let tag = outcome === 'draw' ? 'DRAW' : outcome === 'win' ? 'WIN +1步' : 'LOSE';
+        let tag = outcome === 'draw' ? 'DRAW' : outcome === 'win' ? `WIN +${losersCount}步` : 'LOSE';
         if (p?.status === 'pending_revive') tag = outcome === 'win' ? '地府复活!' : outcome === 'lose' ? '彻底死透' : '重猜';
         return { name: p?.name || '特工', hand: h, outcome, tag };
       });
 
+      if (!isDraw) {
+        const winNames = winners.map((id) => getPlayer(id)?.name).join('、');
+        addLog(`✊ 猜拳：${winNames} 胜（各+${losersCount}步）`, 'system');
+      }
+
       emitFx('rpsClash', {
         kicker: `TURN ${state.turn} // SHOWDOWN`,
         title: isDraw ? '平局！重新出拳！' : `${winners.map((id) => getPlayer(id)?.name).join('、')} 胜出！`,
-        subtitle: isDraw ? '所有人手势未分胜负，立刻重猜' : '胜者夺取本回合行动力',
+        subtitle: isDraw ? '未分胜负，立刻重猜' : `击败 ${losersCount} 人 · 胜者各获 +${losersCount}步`,
         entries,
-        durationMs: 1050
+        durationMs: 2200
       });
 
       Net.broadcastState();
@@ -1499,11 +1522,11 @@
 
       scheduleHostTask(() => {
         if (isDraw) Engine.startMainRps(state.rps.participants, state.rps.round + 1);
-        else Engine.finalizeMainRps(winners);
-      }, 1150);
+        else Engine.finalizeMainRps(winners, losersCount);
+      }, 2350);
     },
 
-    finalizeMainRps(winnerIds) {
+    finalizeMainRps(winnerIds, baseSteps = 1) {
       const winnerSet = new Set(winnerIds);
       const actingWinners = [];
 
@@ -1515,7 +1538,7 @@
         } else {
           p.reviveUsed = true;
           p.status = 'dead_final';
-          addLog(`☠ ${p.name} 地府复活猜拳落败，彻底死透！`, 'kill');
+          addLog(`☠ ${p.name} 复活失败，死透`, 'kill');
         }
       });
 
@@ -1527,18 +1550,18 @@
         const won = winnerSet.has(p.id);
 
         if (won && participated) {
-          let steps = 1;
+          let steps = baseSteps;
           if (p.roleId === 'reverser' && p.momentum > 0) {
             steps += p.momentum;
-            addLog(`🌀 逆转者 ${p.name} 引爆 ${p.momentum} 层「势」，本回合共获 ${steps} 步！`, 'skill');
-            emitFx('float', { nodeId: p.location, text: `逆转 +${p.momentum}步!`, kind: 'skill' });
+            addLog(`🌀 ${p.name} 引爆${p.momentum}势 → +${steps}步`, 'skill');
+            emitFx('float', { nodeId: p.location, text: `逆转 +${steps}步!`, kind: 'skill' });
             p.momentum = 0;
           }
           p.steps += steps;
         } else if (participated && !won) {
           if (p.roleId === 'reverser' && p.momentum < 2) {
             p.momentum += 1;
-            addLog(`🌀 逆转者 ${p.name} 输拳蓄势（当前 ${p.momentum}/2 层）`, 'skill');
+            addLog(`🌀 ${p.name} 蓄势 ${p.momentum}/2`, 'skill');
             emitFx('float', { nodeId: p.location, text: `蓄势 ${p.momentum}/2`, kind: 'skill' });
           }
         }
@@ -1552,7 +1575,7 @@
         }
 
         if (p.paralyzed && p.steps > 0) {
-          addLog(`⚡ ${p.name} 处于麻痹状态，失去本回合 ${p.steps} 步行动权！`, 'skill');
+          addLog(`⚡ ${p.name} 麻痹，损失 ${p.steps} 步`, 'skill');
           p.steps = 0;
         }
 
@@ -1565,7 +1588,7 @@
       });
 
       if (actingWinners.length === 0) {
-        addLog('本回合无常规行动者，进入结算流程。', 'normal');
+        addLog('⏭ 本回合无行动者', 'muted');
         Engine.proceedToStealthOrEndTurn();
         return;
       }
@@ -1575,22 +1598,13 @@
         return;
       }
 
-      const gamblers = actingWinners.filter((pid) => getPlayer(pid)?.roleId === 'gambler');
-      if (gamblers.length === 1) {
-        const g = getPlayer(gamblers[0]);
-        addLog(`🃏 老千【${g.name}】触发庄家特权，自动夺得第一解释权！`, 'skill');
-        emitFx('banner', { kicker: 'GAMBLER // 第一解释权', title: `${g.name} 庄家先决`, sub: '自选本回合第几个出手，其余顺位递推', mood: 'p3r', durationMs: 1100 });
-        Engine.enterInitiativeSlotPick(g.id, actingWinners);
-        return;
-      }
-
-      Engine.startInitiativeRps(gamblers.length > 1 ? gamblers : actingWinners, actingWinners, 1);
+      Engine.startInitiativeRps(actingWinners, actingWinners, 1);
     },
 
     startInitiativeRps(contenders, allWinners, roundNum = 1) {
       state.phase = 'initiative';
       state.initiative = { mode: 'rps', round: roundNum, contenders, allWinners, choices: {}, revealed: false, firstWinnerId: null };
-      addLog(`🎲 ${contenders.map((id) => getPlayer(id)?.name).join('、')} 内部猜拳争夺「第一解释权」！`, 'system');
+      addLog(`🎲 解释权对决：${contenders.map((id) => getPlayer(id)?.name).join(' vs ')}`, 'system');
       Net.broadcastState();
       UI.renderAll();
       AI.scheduleTick();
@@ -1631,7 +1645,7 @@
           outcome: isDraw ? 'draw' : winners.includes(id) ? 'win' : 'lose',
           tag: isDraw ? 'DRAW' : winners.includes(id) ? '晋级' : '顺位递推'
         })),
-        durationMs: 1000
+        durationMs: 2000
       });
 
       Net.broadcastState();
@@ -1641,7 +1655,7 @@
         if (isDraw) Engine.startInitiativeRps(state.initiative.contenders, state.initiative.allWinners, state.initiative.round + 1);
         else if (winners.length > 1) Engine.startInitiativeRps(winners, state.initiative.allWinners, state.initiative.round + 1);
         else Engine.enterInitiativeSlotPick(winners[0], state.initiative.allWinners);
-      }, 1080);
+      }, 2150);
     },
 
     enterInitiativeSlotPick(firstWinnerId, allWinners) {
@@ -1660,7 +1674,7 @@
       const idx = clamp(slotIndex, 0, others.length);
       const finalOrder = [...others.slice(0, idx), playerId, ...others.slice(idx)];
 
-      addLog(`📌 ${getPlayer(playerId)?.name} 动用第一解释权，选择第 ${idx + 1} 顺位出手！顺位：${finalOrder.map((id, i) => `${i + 1}.${getPlayer(id)?.name}`).join(' → ')}`, 'system');
+      addLog(`📌 行动顺位：${finalOrder.map((id, i) => `${i + 1}.${getPlayer(id)?.name}`).join(' → ')}`, 'system');
       Engine.beginActionQueue(finalOrder);
     },
 
@@ -1735,7 +1749,7 @@
         state.phase = 'stealth_reveal';
         state.activePlayerId = raider.id;
         addLog(`👁 量子隐身坍缩！突袭者【${raider.name}】即将揭晓上回合暗步！`, 'skill');
-        emitFx('banner', { kicker: 'QUANTUM COLLAPSE // 隐身揭晓', title: `${raider.name} 现身判定`, sub: '揭晓白名单暗步并结算所有预判攻击', mood: 'p5r', durationMs: 1150 });
+        emitFx('banner', { kicker: 'QUANTUM COLLAPSE // 隐身揭晓', title: `${raider.name} 现身判定`, sub: '揭晓白名单暗步并结算所有预判攻击', mood: 'p5r', durationMs: 2100 });
         Net.broadcastState();
         UI.renderAll();
         AI.scheduleTick();
@@ -1863,7 +1877,7 @@
 
       if (act === 'pass') {
         actor.steps = 0;
-        addLog(`⏭ ${actor.name} 选择结束本回合剩余行动。`, 'normal');
+        addLog(`⏭ ${actor.name} 结束行动`, 'muted');
         Engine.finishCurrentActorIfDone(actor);
         return;
       }
@@ -1892,7 +1906,7 @@
         const before = actor.pants;
         actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + 1));
         const gain = roundHalf(actor.pants - before);
-        addLog(`👖 ${actor.name} 穿上裤子（+${gain} → ${actor.pants}/${actor.maxPants}）`, 'normal');
+        addLog(`👖 ${actor.name} 穿裤 +${gain}👖 (${actor.pants}/${actor.maxPants})`, 'normal');
         emitFx('float', { nodeId: actor.location, text: `+${gain}👖`, kind: 'heal' });
         emitFx('sfx', { name: 'click' });
         Engine.finishCurrentActorIfDone(actor);
@@ -1903,7 +1917,7 @@
         if (actor.steps < 1) return;
         actor.steps -= 1;
         actor.knives += 1;
-        addLog(`🔪 ${actor.name} 拔出小刀（当前 ${actor.knives} 刀）`, 'normal');
+        addLog(`🔪 ${actor.name} 拔刀 +1🔪 (共${actor.knives})`, 'normal');
         emitFx('float', { nodeId: actor.location, text: '+1🔪', kind: 'info' });
         emitFx('sfx', { name: 'knife' });
         Engine.finishCurrentActorIfDone(actor);
@@ -1974,7 +1988,7 @@
         if (checkPigFaceBlock(target)) return;
         actor.steps -= 1;
         const lost = applyPantsLoss(target, power, '扒裤');
-        addLog(`👖 ${actor.name} 扒掉了 ${target.name} ${lost} 条裤子（剩 ${target.pants}）！`, 'normal');
+        addLog(`👖 ${actor.name} 扒 ${target.name} -${lost}👖 (剩${target.pants})`, 'normal');
         emitFx('bannerAction', { order: orderTag, actor: actor.name, action: hasSQ(actor, 'SQ1') ? '大刀重扒' : '扒裤', target: target.name, result: `-${lost}👖（剩 ${target.pants}）` });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -1998,7 +2012,7 @@
         actor.steps -= 1;
         Engine.tryPiggyStealKnife(actor, target);
         const res = applyHpDamage(target, dmg, actor, { canDodge: true, reason: `被 ${actor.name} 持刀「咔」死` });
-        addLog(res.dodged ? `🔪 ${actor.name} 对 ${target.name} 挥刀「咔」，被遗迹闪避！` : `🔪 ${actor.name} 对 0 裤的 ${target.name} 狠狠「咔」了一刀（-${dmg}❤️）！`, 'kill');
+        addLog(res.dodged ? `🔪 ${actor.name} 咔 ${target.name} → MISS` : `🔪 ${actor.name} 绝杀咔 ${target.name} -${dmg}❤️`, 'kill');
         emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '咔！绝杀斩击', target: target.name, result: res.dodged ? 'MISS!' : res.killed ? '目标阵亡！' : `-${dmg}❤️`, mood: 'p5r' });
         if (res.killed) Engine.maybeTriggerNinjaChain(actor);
         Engine.finishCurrentActorIfDone(actor);
@@ -2061,7 +2075,7 @@
             p.breathedThisTurn = true;
           }
         });
-        addLog(`💨 ${actor.name} 深吸一口气，海空呼吸额度重置！`, 'normal');
+        addLog(`💨 ${actor.name} 呼吸重置`, 'muted');
         emitFx('float', { nodeId: actor.location, text: '呼吸重置!', kind: 'heal' });
         Engine.finishCurrentActorIfDone(actor);
         return;
@@ -2170,7 +2184,7 @@
           emitFx('float', { nodeId: actor.location, text: '裤上限→10!', kind: 'heal' });
           emitFx('sfx', { name: 'rps_win' });
         } else {
-          addLog(`⛏ ${actor.name} 在遗迹辛勤挖掘，但一无所获（25% 概率未中）。`, 'normal');
+          addLog(`⛏ ${actor.name} 【遗迹】挖掘落空`, 'muted');
           emitFx('float', { nodeId: actor.location, text: '挖掘落空', kind: 'info' });
         }
         Engine.finishCurrentActorIfDone(actor);
@@ -2188,12 +2202,12 @@
         if (art.progress >= meta.stepsNeed) {
           art.ownerId = actor.id;
           if (sqId === 'SQ3') art.instanceId += 1;
-          addLog(`👑 ${actor.name} 完成了【${meta.name}】最后一步锻造，收入囊中！`, 'system');
-          emitFx('banner', { kicker: 'ARTIFACT FORGED // 龙宫神器出世', title: `${actor.name} 获得 ${meta.name}`, sub: meta.desc, mood: 'p5r', durationMs: 1200 });
+          addLog(`👑 ${actor.name} 锻成【${meta.name}】`, 'system');
+          emitFx('banner', { kicker: 'ARTIFACT FORGED // 龙宫神器出世', title: `${actor.name} 获得 ${meta.name}`, sub: meta.desc, mood: 'p5r', durationMs: 2150 });
           emitFx('sfx', { name: 'skill' });
           updateBountyStatus(actor);
         } else {
-          addLog(`🔱 ${actor.name} 推进【${meta.name}】锻造进度（${art.progress}/${meta.stepsNeed}）`, 'normal');
+          addLog(`🔱 ${actor.name} 锻造【${meta.short}】${art.progress}/${meta.stepsNeed}`, 'normal');
           emitFx('float', { nodeId: actor.location, text: `${meta.short} ${art.progress}/${meta.stepsNeed}`, kind: 'skill' });
         }
         Engine.finishCurrentActorIfDone(actor);
@@ -2366,7 +2380,7 @@
         actor.activeCharges -= 1;
         target.paralyzedNextTurn = true;
         recordLastActive('chili', '电击麻痹');
-        addLog(`⚡ ${actor.name} 释放【电击麻痹】击中 ${target.name}！其下回合无论获几步都无法行动！`, 'skill');
+        addLog(`⚡ ${actor.name} 电击 ${target.name} → 下回麻痹`, 'skill');
         emitFx('electricArc', { fromNodeId: actor.location, toNodeId: target.location, durationMs: 520 });
         emitFx('float', { nodeId: target.location, text: '⚡ 下回合麻痹!', kind: 'skill' });
         emitFx('bannerAction', { order: orderTag, actor: actor.name, action: '电击麻痹', target: target.name, result: '下回合强制无法行动', mood: 'p5r' });
@@ -2477,19 +2491,6 @@
         return;
       }
 
-      if (skillRole === 'gambler') {
-        if (actor.steps < 1 || actor.activeCharges < 1) return;
-        const target = getPlayer(intent.targetId);
-        if (!target || target.status !== 'alive' || target.location !== actor.location || target.id === actor.id) return;
-        if (checkPigFaceBlock(target)) return;
-
-        actor.steps -= 1;
-        actor.activeCharges -= 1;
-        recordLastActive('gambler', '梭哈');
-        Engine.startGamblerAllIn(actor, target);
-        return;
-      }
-
       if (skillRole === 'barrier') {
         if (actor.steps < 1 || actor.activeCharges < 1) return;
         const node = getNode(intent.nodeId);
@@ -2570,8 +2571,8 @@
         state.warden.respawnCount += 1;
         state.warden.hp = 1;
         state.warden.pants = 3;
-        addLog(`🔓 ${actor.name} 击杀了 NPC 典狱长！${freed.length ? `狱内全员【${freed.join('、')}】重获自由！` : '牢内空无一人。'}新典狱长已刷新。`, 'system');
-        emitFx('banner', { kicker: 'JAILBREAK // 越狱成功', title: '典狱长倒下！', sub: freed.length ? `${freed.join('、')} 全部出狱` : '新任典狱长已就位', mood: 'p5r', durationMs: 1200 });
+        addLog(`🔓 ${actor.name} 击杀典狱长！${freed.length ? `${freed.join('、')} 越狱` : '牢内无人'}`, 'system');
+        emitFx('banner', { kicker: 'JAILBREAK // 越狱成功', title: '典狱长倒下！', sub: freed.length ? `${freed.join('、')} 全部出狱` : '新任典狱长已就位', mood: 'p5r', durationMs: 2150 });
         Engine.maybeTriggerNinjaChain(actor);
       }
     },
@@ -2609,17 +2610,6 @@
       AI.scheduleTick();
     },
 
-    startGamblerAllIn(gambler, target) {
-      state.phase = 'sub_rps';
-      state.subRps = { kind: 'gambler', label: '老千梭哈（一局定胜负）', aId: gambler.id, bId: target.id, aScore: 0, bScore: 0, targetWins: 1, round: 1, choices: {}, revealed: false };
-      addLog(`🎰 老千 ${gambler.name} 与 ${target.name} 展开【梭哈】单局豪赌！`, 'skill');
-      emitFx('sfx', { name: 'blackmarket' });
-      syncMoodFromState();
-      Net.broadcastState();
-      UI.renderAll();
-      AI.scheduleTick();
-    },
-
     submitSubRps(playerId, hand) {
       if (state.phase !== 'sub_rps' || !state.subRps || state.subRps.revealed) return;
       const sr = state.subRps;
@@ -2650,7 +2640,7 @@
           { name: pa?.name, hand: ha, outcome: roundWinner === sr.aId ? 'win' : roundWinner ? 'lose' : 'draw', tag: `${sr.aScore} 胜` },
           { name: pb?.name, hand: hb, outcome: roundWinner === sr.bId ? 'win' : roundWinner ? 'lose' : 'draw', tag: `${sr.bScore} 胜` }
         ],
-        durationMs: 1000
+        durationMs: 2000
       });
 
       Net.broadcastState();
@@ -2675,21 +2665,10 @@
         syncMoodFromState();
 
         if (kind === 'arrest') {
-          sendPlayerToJail(loser, `在 ${sr.label} 猜拳中落败`);
+          sendPlayerToJail(loser, `${sr.label}落败`);
           Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
-        } else if (kind === 'gambler') {
-          if (winner.id === pa.id) {
-            state.pendingAction = { type: 'gambler_loot', actorId: winner.id, loserId: loser.id, gamblerWon: true };
-          } else {
-            pa.pants = 0;
-            addLog(`💸 豪赌翻车！老千 ${pa.name} 裤子清零，等待 ${pb.name} 掠夺战利品！`, 'kill');
-            state.pendingAction = { type: 'gambler_loot', actorId: pb.id, loserId: pa.id, gamblerWon: false };
-          }
-          Net.broadcastState();
-          UI.renderAll();
-          AI.scheduleTick();
         }
-      }, 1080);
+      }, 2150);
     },
 
     rollBlackMarketContracts() {
@@ -2777,7 +2756,7 @@
           return;
         }
         state.pendingAction = null;
-        emitFx('banner', { kicker: 'WISH GRANTED // 许愿达成', title: `${actor.name} 改写了现实`, sub: WISH_OPTIONS.find((o) => o.id === w)?.name || '', mood: 'p5r', durationMs: 1200 });
+        emitFx('banner', { kicker: 'WISH GRANTED // 许愿达成', title: `${actor.name} 改写了现实`, sub: WISH_OPTIONS.find((o) => o.id === w)?.name || '', mood: 'p5r', durationMs: 2150 });
         Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
         return;
       }
@@ -2820,30 +2799,7 @@
         return;
       }
 
-      if (pa.type === 'gambler_loot') {
-        const loser = getPlayer(pa.loserId);
-        const loot = intent.lootType;
-        state.pendingAction = null;
 
-        if (loser && loot === 'knife' && loser.knives > 0) {
-          loser.knives -= 1;
-          actor.knives += 1;
-          addLog(`🎰 梭哈结算：${actor.name} 夺走了 ${loser.name} 1 把刀！`, 'skill');
-        } else if (loser && loot === 'pants' && pa.gamblerWon && loser.pants > 0) {
-          const gain = Math.min(1, loser.pants);
-          loser.pants = roundHalf(loser.pants - gain);
-          actor.pants = Math.min(actor.maxPants, roundHalf(actor.pants + gain));
-          addLog(`🎰 梭哈结算：${actor.name} 夺走了 ${loser.name} ${gain} 裤！`, 'skill');
-        } else if (loser && ['SQ1', 'SQ2', 'SQ3', 'SQ4'].includes(loot) && state.artifacts[loot].ownerId === loser.id) {
-          state.artifacts[loot].ownerId = actor.id;
-          if (loot === 'SQ3') state.artifacts.SQ3.instanceId += 1;
-          addLog(`🎰 梭哈豪夺：${actor.name} 夺走了 ${loser.name} 的【${ARTIFACTS[loot].name}】！`, 'system');
-          updateBountyStatus(actor);
-        } else {
-          addLog(`🎰 梭哈结算：${loser?.name} 身无长物，未能夺取战利品。`, 'normal');
-        }
-        Engine.finishCurrentActorIfDone(getPlayer(state.activePlayerId));
-      }
     },
 
     applyBlackMarketContract(actor, cid, target) {
@@ -2978,7 +2934,7 @@
             handlePlayerDeath(p, null, '海空缺氧窒息身亡');
           }
         } else if (p.oxygenTurns >= state.config.oxygenMax - 2) {
-          addLog(`⚠ ${p.name} 进入缺氧状态（${p.oxygenTurns}/${state.config.oxygenMax}），下回合攻击减半且禁用主动技！`, 'system');
+          addLog(`⚠ ${p.name} 缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}（攻减半/禁主动）`, 'system');
           emitFx('float', { nodeId: p.location, text: `缺氧 ${p.oxygenTurns}/${state.config.oxygenMax}`, kind: 'dmg' });
         }
       });
@@ -3005,8 +2961,8 @@
           const victimNode = candidates[Math.floor(Math.random() * candidates.length)];
           victimNode.collapsed = true;
           victimNode.barrierUntilTurn = 0;
-          addLog(`🌋 残局坍塌！【${victimNode.name}】永久沉没崩毁！`, 'system');
-          emitFx('banner', { kicker: `COLLAPSE // TURN ${state.turn}`, title: `${victimNode.name} 永久坍塌`, sub: '战区持续收缩，绝死对决逼近！', mood: 'p5r', durationMs: 1200 });
+          addLog(`🌋 【${victimNode.name}】永久坍塌！`, 'system');
+          emitFx('banner', { kicker: `COLLAPSE // TURN ${state.turn}`, title: `${victimNode.name} 永久坍塌`, sub: '战区持续收缩，绝死对决逼近！', mood: 'p5r', durationMs: 2150 });
           emitFx('sfx', { name: 'collapse' });
 
           const safeLands = Object.values(state.nodes).filter((n) => !n.collapsed && n.layer === 'land' && n.kind !== 'prison_in');
@@ -3034,7 +2990,7 @@
       }
 
       if (Engine.checkVictory()) return;
-      scheduleHostTask(() => Engine.beginNextTurn(), 650);
+      scheduleHostTask(() => Engine.beginNextTurn(), 1400);
     },
 
     checkVictory() {
@@ -3049,7 +3005,7 @@
           ? `${alive[0].name}（${ROLE_MAP[alive[0].roleId]?.name}）成为最终幸存者！`
           : '全员同归于尽，无人幸存！';
         addLog(`🏆 战局终结：${state.winnerReason}`, 'system');
-        emitFx('banner', { kicker: 'VICTORY // 终局裁决', title: alive.length === 1 ? `${alive[0].name} 胜出` : '全员覆灭', sub: state.winnerReason, mood: 'p5r', durationMs: 1500 });
+        emitFx('banner', { kicker: 'VICTORY // 终局裁决', title: alive.length === 1 ? `${alive[0].name} 胜出` : '全员覆灭', sub: state.winnerReason, mood: 'p5r', durationMs: 2600 });
         emitFx('sfx', { name: 'win' });
         Net.broadcastState();
         UI.renderAll();
@@ -3066,7 +3022,7 @@
   Object.assign(AI, {
     scheduleTick() {
       if (!isHostAuthority() || !state.started || state.phase === 'gameover') return;
-      const delay = clamp(Number(state.config.aiDelayMs) || 850, 250, 2200);
+      const delay = clamp(Number(state.config.aiDelayMs) || 1600, 400, 3500);
       const randHand = () => ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
 
       if (state.phase === 'rps' && state.rps && !state.rps.revealed) {
@@ -3159,15 +3115,6 @@
       } else if (pa.type === 'ninja_chain') {
         const targets = Engine.getNinjaChainTargets(actor);
         Engine.resolvePendingAction(actor.id, targets.length > 0 ? { targetId: targets[0].id } : { skip: true });
-      } else if (pa.type === 'gambler_loot') {
-        const loser = getPlayer(pa.loserId);
-        if (loser) {
-          const sq = ['SQ1', 'SQ2', 'SQ3', 'SQ4'].find((id) => state.artifacts[id].ownerId === loser.id);
-          if (sq) { Engine.resolvePendingAction(actor.id, { lootType: sq }); return; }
-          if (loser.knives > 0) { Engine.resolvePendingAction(actor.id, { lootType: 'knife' }); return; }
-          if (pa.gamblerWon && loser.pants > 0) { Engine.resolvePendingAction(actor.id, { lootType: 'pants' }); return; }
-        }
-        Engine.resolvePendingAction(actor.id, { lootType: 'none' });
       }
     },
 
@@ -3237,10 +3184,6 @@
       if (validHere.length > 0) {
         const target = validHere[0];
         if (actor.roleId === 'parasite' && actor.activeCharges > 0 && !isHypoxic(actor) && target.parasiteHostId !== actor.id && Math.random() < 0.45) {
-          Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: target.id });
-          return;
-        }
-        if (actor.roleId === 'gambler' && actor.activeCharges > 0 && !isHypoxic(actor) && Math.random() < 0.4) {
           Engine.executePlayerAction(actor.id, { action: 'use_skill', targetId: target.id });
           return;
         }
@@ -3318,16 +3261,26 @@
       root.setProperty('--cam-ty', `${cam.ty.toFixed(0)}px`);
     }
 
+    let currentPreset = 'default';
+
+    function getResponsiveBaseScale() {
+      const vp = document.getElementById('map-viewport');
+      const w = vp && vp.clientWidth > 0 ? vp.clientWidth : window.innerWidth;
+      return w < 680 ? clamp((w - 16) / 680, 0.48, 0.92) : 1;
+    }
+
     function setPreset(preset) {
-      if (preset === 'top') { cam.rx = 12; cam.rz = 0; cam.scale = 1.02; cam.tx = 0; cam.ty = 0; }
-      else if (preset === 'side') { cam.rx = 74; cam.rz = -40; cam.scale = 0.94; cam.tx = 0; cam.ty = 10; }
-      else { cam.rx = 56; cam.rz = -28; cam.scale = 1; cam.tx = 0; cam.ty = 0; }
+      currentPreset = preset || 'default';
+      const base = getResponsiveBaseScale();
+      if (currentPreset === 'top') { cam.rx = 14; cam.rz = 0; cam.scale = 1.02 * base; cam.tx = 0; cam.ty = 0; }
+      else if (currentPreset === 'side') { cam.rx = 72; cam.rz = -36; cam.scale = 0.94 * base; cam.tx = 0; cam.ty = 8; }
+      else { cam.rx = 54; cam.rz = -26; cam.scale = 1 * base; cam.tx = 0; cam.ty = 0; }
       applyTransform();
-      ['default', 'top', 'side'].forEach((k) => document.getElementById(`btn-cam-${k}`)?.classList.toggle('is-active', k === preset));
+      ['default', 'top', 'side'].forEach((k) => document.getElementById(`btn-cam-${k}`)?.classList.toggle('is-active', k === currentPreset));
     }
 
     function zoom(delta) {
-      cam.scale = clamp(cam.scale + delta, 0.58, 1.65);
+      cam.scale = clamp(cam.scale + delta, 0.42, 1.65);
       applyTransform();
     }
 
@@ -3369,7 +3322,8 @@
       vp.addEventListener('pointerup', endDrag);
       vp.addEventListener('pointercancel', endDrag);
       vp.addEventListener('wheel', (e) => { e.preventDefault(); zoom(e.deltaY < 0 ? 0.08 : -0.08); }, { passive: false });
-      applyTransform();
+      window.addEventListener('resize', () => setPreset(currentPreset));
+      setPreset('default');
     }
 
     return { bind, setPreset, zoom, toggleEmptyNodes, getNodeClientRect };
@@ -3400,6 +3354,10 @@
       UI.renderHud();
       UI.renderArtifactsBar();
       UI.renderMap();
+      if (window.innerWidth <= 820 && !gameEl?.dataset.camFitted) {
+        if (gameEl) gameEl.dataset.camFitted = '1';
+        window.requestAnimationFrame(() => Map3D.setPreset('default'));
+      }
       UI.renderPlayers();
       UI.renderActionDock();
       UI.renderLog();
@@ -3887,17 +3845,7 @@
         return;
       }
 
-      if (pa.type === 'gambler_loot') {
-        const loser = getPlayer(pa.loserId);
-        const opts = [];
-        if (loser && loser.knives > 0) opts.push('<button class="pk-btn pk-btn--crimson pk-btn--sm" data-loot-pick="knife" type="button"><span class="btn-label">🔪 夺走 1 刀</span></button>');
-        if (loser && pa.gamblerWon && loser.pants > 0) opts.push('<button class="pk-btn pk-btn--primary pk-btn--sm" data-loot-pick="pants" type="button"><span class="btn-label">👖 夺走 1 裤</span></button>');
-        ['SQ1', 'SQ2', 'SQ3', 'SQ4'].forEach((sq) => {
-          if (loser && state.artifacts[sq].ownerId === loser.id) opts.push(`<button class="pk-btn pk-btn--accent pk-btn--sm" data-loot-pick="${sq}" type="button"><span class="btn-label">👑 夺走 ${ARTIFACTS[sq].name}</span></button>`);
-        });
-        if (opts.length === 0) opts.push('<button class="pk-btn pk-btn--ghost pk-btn--sm" data-loot-pick="none" type="button"><span class="btn-label">对方无可夺物品（确认）</span></button>');
-        box.innerHTML = `<div class="subpanel-head"><span>🎰 梭哈获胜！请选择从 ${escapeHtml(loser?.name)} 夺取的战利品</span></div><div class="action-btn-grid">${opts.join('')}</div>`;
-      }
+
     },
 
     renderLocalSubpanel(box, self, sub) {
@@ -3988,8 +3936,8 @@
           `;
           return;
         }
-        if (['chili', 'watcher', 'parasite', 'gambler'].includes(effRole)) {
-          let pool = effRole === 'parasite' || effRole === 'gambler' ? enemiesHere : aliveEnemies;
+        if (['chili', 'watcher', 'parasite'].includes(effRole)) {
+          let pool = effRole === 'parasite' ? enemiesHere : aliveEnemies;
           if (effRole === 'watcher') pool = pool.filter((e) => e.location !== 'land_prison_in');
           box.innerHTML = `<div class="subpanel-head"><span>★ ${escapeHtml(ROLE_MAP[effRole].activeName)} · 选择目标</span>${closeBtn}</div><div class="action-btn-grid">${pool.map((t) => `<button class="pk-btn pk-btn--crimson pk-btn--sm" data-skill-target="${t.id}" type="button"><span class="btn-label">${escapeHtml(t.name)}</span></button>`).join('') || '<span>暂无合法目标</span>'}</div>`;
           return;
@@ -4048,9 +3996,44 @@
 
     renderLog() {
       const el = document.getElementById('battle-log-list');
-      if (!el) return;
-      el.innerHTML = state.logs.slice(-60).map((item) => `<div class="log-entry log-entry--${item.kind}"><span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>${escapeHtml(item.text)}</div>`).join('');
-      el.scrollTop = el.scrollHeight;
+      const ticker = document.getElementById('mobile-live-ticker');
+      const logBadge = document.getElementById('mobile-log-badge');
+
+      if (state.logs.length > localUI.lastLogCount) {
+        if (localUI.mobileTab !== 'log') {
+          localUI.unreadLogCount += (state.logs.length - localUI.lastLogCount);
+        }
+        localUI.lastLogCount = state.logs.length;
+      }
+
+      const reversed = [...state.logs].slice(-50).reverse();
+
+      if (el) {
+        el.innerHTML = reversed.map((item, idx) => `
+          <div class="log-entry log-entry--${item.kind} ${idx < 2 ? 'is-fresh' : ''}">
+            <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
+            <span class="log-body">${formatLogHtml(item.text)}</span>
+          </div>
+        `).join('');
+        el.scrollTop = 0;
+      }
+
+      if (ticker) {
+        const latestTwo = reversed.slice(0, 2);
+        ticker.innerHTML = latestTwo.length
+          ? latestTwo.map((item, idx) => `
+              <div class="ticker-line ${idx === 0 ? 'is-newest' : ''}">
+                <span class="log-turn-tag">T${String(item.turn).padStart(2, '0')}</span>
+                <span>${formatLogHtml(item.text)}</span>
+              </div>
+            `).join('')
+          : '<div class="ticker-line">战局即将开幕...</div>';
+      }
+
+      if (logBadge) {
+        logBadge.textContent = localUI.unreadLogCount > 9 ? '9+' : String(localUI.unreadLogCount);
+        logBadge.classList.toggle('is-hidden', localUI.unreadLogCount <= 0);
+      }
     },
 
     renderComms() {
@@ -4140,7 +4123,7 @@
         oxygenMax: clamp(Number(g('cfg-oxygen-max')?.value) || 5, 3, 10),
         bountyArtifacts: clamp(Number(g('cfg-bounty-artifacts')?.value) || 2, 1, 4),
         bountyKills: clamp(Number(g('cfg-bounty-kills')?.value) || 2, 1, 6),
-        aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 850, 250, 2500),
+        aiDelayMs: clamp(Number(g('cfg-ai-delay')?.value) || 1600, 400, 3500),
         collapseEnabled: Boolean(g('cfg-opt-collapse')?.checked),
         bountyEnabled: Boolean(g('cfg-opt-bounty')?.checked),
         vfxEnabled: Boolean(g('cfg-opt-vfx')?.checked)
@@ -4209,6 +4192,24 @@
     on('btn-cam-zoom-in', 'click', () => Map3D.zoom(0.12));
     on('btn-cam-zoom-out', 'click', () => Map3D.zoom(-0.12));
     on('btn-toggle-empty-nodes', 'click', () => Map3D.toggleEmptyNodes());
+
+    const setMobileTab = (tab) => {
+      if (!['map', 'players', 'log'].includes(tab)) return;
+      localUI.mobileTab = tab;
+      if (tab === 'log') localUI.unreadLogCount = 0;
+      const ws = document.querySelector('.game-workspace');
+      if (ws) ws.dataset.mobileTab = tab;
+      document.querySelectorAll('#mobile-stage-tabs .m-tab').forEach((b) =>
+        b.classList.toggle('is-active', b.dataset.mtab === tab)
+      );
+      if (tab === 'map') window.requestAnimationFrame(() => Map3D.setPreset('default'));
+      UI.renderLog();
+    };
+    document.getElementById('mobile-stage-tabs')?.addEventListener('click', (e) => {
+      const b = e.target.closest('.m-tab');
+      if (b) setMobileTab(b.dataset.mtab);
+    });
+    document.getElementById('mobile-live-ticker')?.addEventListener('click', () => setMobileTab('log'));
 
     document.getElementById('map-scene-3d')?.addEventListener('click', (e) => {
       const nodeEl = e.target.closest('.map-node');
@@ -4301,7 +4302,6 @@
 
       if (d.ninjaSkip) { Net.sendIntent({ type: 'PENDING_CHOICE', skip: true }); return; }
       if (d.ninjaHit) { Net.sendIntent({ type: 'PENDING_CHOICE', targetId: d.ninjaHit }); return; }
-      if (d.lootPick) { Net.sendIntent({ type: 'PENDING_CHOICE', lootType: d.lootPick }); return; }
 
       if (d.closeSub) { localUI.subPanelState = null; UI.renderAll(); return; }
       if (d.quickAct) { Net.sendIntent({ type: 'ACTION', action: d.quickAct }); return; }

@@ -906,9 +906,28 @@
     state.rafId = window.requestAnimationFrame(mainLoop);
   }
 
+  function dismissCurrentBanner() {
+    if (!bannerBusy || !dom.bannerBox) return;
+    window.clearTimeout(bannerTimerA);
+    window.clearTimeout(bannerTimerB);
+    dom.bannerBox.classList.remove('is-showing');
+    dom.bannerBox.classList.add('is-leaving');
+    bannerTimerB = window.setTimeout(() => {
+      dom.bannerBox.classList.remove('is-leaving');
+      if (dom.bannerLayer) dom.bannerLayer.setAttribute('aria-hidden', 'true');
+      bannerBusy = false;
+      processBannerQueue();
+    }, 220);
+  }
+
   function processBannerQueue() {
     if (bannerBusy || bannerQueue.length === 0) return;
     if (!dom.bannerBox) { bannerQueue.length = 0; return; }
+
+    // 防止积压过长导致弹幕滞后战局
+    if (bannerQueue.length > 3) {
+      bannerQueue.splice(0, bannerQueue.length - 3);
+    }
 
     bannerBusy = true;
     const item = bannerQueue.shift();
@@ -925,17 +944,10 @@
 
     if (item.playSlide !== false) AudioEngine.play('slide');
 
-    const holdMs = typeof item.durationMs === 'number' ? item.durationMs : 1100;
+    const baseHold = typeof item.durationMs === 'number' ? item.durationMs : 2200;
+    const holdMs = bannerQueue.length >= 2 ? Math.max(1500, baseHold - 450) : baseHold;
     bannerTimerA = window.setTimeout(() => {
-      dom.bannerBox.classList.remove('is-showing');
-      dom.bannerBox.classList.add('is-leaving');
-
-      bannerTimerB = window.setTimeout(() => {
-        dom.bannerBox.classList.remove('is-leaving');
-        if (dom.bannerLayer) dom.bannerLayer.setAttribute('aria-hidden', 'true');
-        bannerBusy = false;
-        processBannerQueue();
-      }, 270);
+      dismissCurrentBanner();
     }, holdMs);
   }
 
@@ -960,14 +972,14 @@
     const title = options.title || 'RPS CLASH // 猜拳亮牌';
     const subtitle = options.subtitle || '';
     const kicker = options.kicker || 'SHOWDOWN';
-    const durationMs = typeof options.durationMs === 'number' ? options.durationMs : 1050;
+    const durationMs = typeof options.durationMs === 'number' ? options.durationMs : 2200;
 
     return new Promise((resolve) => {
       const overlay = ensureRpsOverlay();
       const cardsHtml = entries.map((e) => {
         const icon = HAND_ICON[e.hand] || e.hand || '❔';
         const outcomeClass = e.outcome === 'win' ? 'is-win' : e.outcome === 'lose' ? 'is-lose' : 'is-draw';
-        const outcomeLabel = e.outcome === 'win' ? 'WIN +1步' : e.outcome === 'lose' ? 'LOSE' : 'DRAW';
+        const outcomeLabel = e.outcome === 'win' ? 'WIN' : e.outcome === 'lose' ? 'LOSE' : 'DRAW';
         return `
           <div class="vfx-rps-card ${outcomeClass}">
             <div class="vfx-rps-hand">${escapeHtml(icon)}</div>
@@ -1183,10 +1195,10 @@
     else if (safeType === 'miss') rippleOnNode(nodeId, '#ffe600', 1);
     else if (safeType === 'emoji') rippleOnNode(nodeId, '#ffffff', 1);
 
-    window.setTimeout(() => el.remove(), safeType === 'emoji' ? 2450 : 1700);
+    window.setTimeout(() => el.remove(), safeType === 'emoji' ? 2800 : 2500);
   }
 
-  function banner(kicker, title, sub = '', mood = null, durationMs = 1100) {
+  function banner(kicker, title, sub = '', mood = null, durationMs = 2200) {
     bannerQueue.push({
       kicker: String(kicker || 'ALERT'),
       title: String(title || ''),
@@ -1197,7 +1209,7 @@
     processBannerQueue();
   }
 
-  function bannerAction({ order = '', actor = '', action = '', target = '', result = '', mood = null, durationMs = 1120 } = {}) {
+  function bannerAction({ order = '', actor = '', action = '', target = '', result = '', mood = null, durationMs = 2050 } = {}) {
     const kicker = order ? `ORDER ${order} // ACTION` : 'TACTICAL ACTION';
     const title = target ? `${actor} ▸ ${action} ▸ ${target}` : `${actor} ▸ ${action}`;
     banner(kicker, title, result, mood || state.mood, durationMs);
@@ -1229,7 +1241,7 @@
       item.style.transform = 'translateY(-10px) skewX(-12deg)';
       item.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
       window.setTimeout(() => item.remove(), 220);
-    }, 2400);
+    }, 3600);
   }
 
   function setEnabled(bool) {
@@ -1299,6 +1311,7 @@
     dom.toastLayer = document.getElementById('vfx-toast-layer');
     dom.mapViewport = document.getElementById('map-viewport');
     dom.mapOverlay = document.getElementById('map-fx-overlay');
+    if (dom.bannerBox) dom.bannerBox.addEventListener('click', dismissCurrentBanner);
 
     if (dom.weatherCanvas) wCtx = dom.weatherCanvas.getContext('2d');
     if (dom.fxCanvas) fCtx = dom.fxCanvas.getContext('2d');

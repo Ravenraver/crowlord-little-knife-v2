@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Little Knife</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+  <script src="vfx.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body data-mood="p3r">
+  <!-- 全屏特效与视觉氛围层 -->
+  <canvas id="vfx-weather-canvas" aria-hidden="true"></canvas>
+  <div id="vfx-halftone-layer" aria-hidden="true"></div>
+  <canvas id="vfx-fx-canvas" aria-hidden="true"></canvas>
+
+  <!-- Persona 大字幕切入队列层 -->
+  <div id="vfx-banner-layer" aria-live="polite" aria-hidden="true">
+    <div id="vfx-banner-box" class="banner-box">
+      <div class="banner-stripe"></div>
+      <div class="banner-content">
+        <span id="vfx-banner-kicker" class="banner-kicker">ALERT</span>
+        <h2 id="vfx-banner-text" class="banner-text">LITTLE KNIFE</h2>
+        <p id="vfx-banner-sub" class="banner-sub"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 顶部轻提示容器 -->
+  <div id="vfx-toast-layer" aria-live="polite"></div>
+
+  <!-- ==================== 视图一：大厅界面 ==================== -->
+  <main id="screen-lobby" class="screen is-active">
+    <div class="bg-deco-num" aria-hidden="true">17</div>
+    <div class="bg-deco-slash" aria-hidden="true"></div>
+
+    <header class="lobby-header">
+      <div class="brand-lockup">
+        <span class="brand-index">00</span>
+        <h1 class="brand-title">Little Knife</h1>
+      </div>
+
+      <div class="header-tools">
+        <button id="btn-open-guide" class="pk-btn pk-btn--ghost" type="button">
+          <span class="btn-label">新手引导</span>
+        </button>
+        <button id="btn-open-config" class="pk-btn pk-btn--ghost" type="button">
+          <span class="btn-label">房主参数</span>
+        </button>
+        <button id="btn-toggle-audio" class="pk-btn pk-btn--ghost" type="button" aria-pressed="true">
+          <span class="btn-label">音效: ON</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="lobby-grid">
+      <!-- 左侧：联机控制、房间席位与规则开关 -->
+      <div class="lobby-col-left">
+        <!-- 身份与连接面板 -->
+        <div class="pk-panel panel-connect">
+          <div class="panel-deco-tag">NET // WEBRTC</div>
+
+          <div class="field-row">
+            <label for="input-nickname" class="field-label">特工代号</label>
+            <input id="input-nickname" class="pk-input" type="text" maxlength="12" placeholder="输入你的昵称..." autocomplete="off" />
+          </div>
+
+          <div class="connect-actions">
+            <button id="btn-create-room" class="pk-btn pk-btn--primary" type="button">
+              <span class="btn-label">创建房间</span>
+            </button>
+
+            <div class="join-group">
+              <input id="input-room-code" class="pk-input pk-input--code" type="text" maxlength="4" placeholder="4位码" autocomplete="off" />
+              <button id="btn-join-room" class="pk-btn pk-btn--accent" type="button">
+                <span class="btn-label">加入</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="solo-bar">
+            <div class="solo-select-wrap">
+              <label for="select-ai-count" class="field-label">单机人数</label>
+              <select id="select-ai-count" class="pk-select">
+                <option value="3">3人局 (含2 AI)</option>
+                <option value="4" selected>4人局 (含3 AI)</option>
+                <option value="5">5人局 (含4 AI)</option>
+                <option value="6">6人局 (含5 AI)</option>
+                <option value="8">8人混战 (含7 AI)</option>
+              </select>
+            </div>
+            <button id="btn-start-solo" class="pk-btn pk-btn--crimson" type="button">
+              <span class="btn-label">单机 AI 试玩</span>
+            </button>
+          </div>
+
+          <!-- 建房/入房后显示的房间码与连接状态条 -->
+          <div id="room-code-bar" class="room-code-bar is-hidden">
+            <div class="room-code-meta">
+              <span class="room-code-label">ROOM CODE</span>
+              <strong id="display-room-code" class="room-code-val">----</strong>
+            </div>
+            <div class="room-code-ops">
+              <span id="conn-status-badge" class="status-pill">OFFLINE</span>
+              <button id="btn-copy-invite" class="pk-btn pk-btn--sm" type="button">
+                <span class="btn-label">复制邀请链接</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 规则开关条 -->
+        <div id="lobby-rules-bar" class="pk-panel panel-rules">
+          <div class="panel-deco-tag">RULES // MODIFIERS</div>
+          <div class="rules-toggle-list">
+            <label class="pk-check">
+              <input id="opt-collapse" type="checkbox" checked />
+              <span class="pk-check-box"></span>
+              <span class="pk-check-text">残局地图坍塌（第10回合起）</span>
+            </label>
+            <label class="pk-check">
+              <input id="opt-bounty" type="checkbox" checked />
+              <span class="pk-check-box"></span>
+              <span class="pk-check-text">全服通缉悬赏</span>
+            </label>
+            <label class="pk-check">
+              <input id="opt-vfx" type="checkbox" checked />
+              <span class="pk-check-box"></span>
+              <span class="pk-check-text">全屏特效与合成音效</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 房间玩家席位 -->
+        <div class="pk-panel panel-roster">
+          <div class="panel-head-inline">
+            <div class="panel-deco-tag">SQUAD // ROSTER</div>
+            <span id="lobby-host-hint" class="roster-hint">单机或联机均可随时补位 AI</span>
+          </div>
+
+          <div id="lobby-player-list" class="lobby-player-list"></div>
+
+          <div class="roster-footer">
+            <button id="btn-add-ai" class="pk-btn pk-btn--ghost" type="button">
+              <span class="btn-label">+ 添加二次元 AI</span>
+            </button>
+            <button id="btn-start-match" class="pk-btn pk-btn--crimson pk-btn--lg" type="button">
+              <span class="btn-label">开始对局</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：17 角色 Persona 档案选择区 -->
+      <div class="lobby-col-right">
+        <div class="pk-panel panel-dossier">
+          <div class="dossier-toolbar">
+            <div id="role-filter-tabs" class="role-tabs" role="tablist" aria-label="角色定位筛选">
+              <button class="role-tab is-active" data-filter="all" type="button"><span>全部 17</span></button>
+              <button class="role-tab" data-filter="assassin" type="button"><span>刺客</span></button>
+              <button class="role-tab" data-filter="control" type="button"><span>控场</span></button>
+              <button class="role-tab" data-filter="trick" type="button"><span>诡计</span></button>
+              <button class="role-tab" data-filter="survival" type="button"><span>生存</span></button>
+            </div>
+
+            <button id="btn-random-role" class="pk-btn pk-btn--accent pk-btn--sm" type="button">
+              <span class="btn-label">🎲 随机盲选</span>
+            </button>
+          </div>
+
+          <div id="role-grid" class="role-grid"></div>
+          <div id="role-detail-panel" class="role-detail-panel"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== 视图二：对局主界面 ==================== -->
+  <main id="screen-game" class="screen">
+    <!-- 顶部全局战局 HUD -->
+    <header id="game-hud-top" class="game-hud-top">
+      <div class="hud-left">
+        <div class="hud-turn-badge">
+          <span class="hud-kicker">TURN</span>
+          <strong id="hud-turn">01</strong>
+        </div>
+        <div class="hud-meta-stack">
+          <span id="hud-phase" class="hud-phase-pill">猜拳阶段</span>
+          <div class="hud-env-row">
+            <span id="hud-weather" class="hud-tag">天象: 晴朗</span>
+            <span id="hud-collapse-info" class="hud-tag hud-tag--warn">坍塌: T10</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="hud-turn-order" class="hud-turn-order" aria-label="本回合行动顺位"></div>
+
+      <div class="hud-right">
+        <button id="btn-toggle-empty-nodes" class="pk-btn pk-btn--sm pk-btn--ghost" type="button" aria-pressed="false">
+          <span class="btn-label">空地点: 隐藏</span>
+        </button>
+        <button id="btn-host-config-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
+          <span class="btn-label">参数</span>
+        </button>
+        <button id="btn-open-guide-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
+          <span class="btn-label">规则</span>
+        </button>
+        <button id="btn-toggle-audio-ingame" class="pk-btn pk-btn--sm pk-btn--ghost" type="button">
+          <span class="btn-label">🔊</span>
+        </button>
+        <button id="btn-leave-game" class="pk-btn pk-btn--sm pk-btn--danger" type="button">
+          <span class="btn-label">撤离</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 对局主体三栏工作区 -->
+    <div class="game-workspace">
+      <!-- 左栏：全员状态监控 -->
+      <aside id="panel-players" class="pk-panel panel-players">
+        <div class="panel-deco-tag">AGENTS // STATUS</div>
+        <div id="ingame-player-list" class="ingame-player-list"></div>
+      </aside>
+
+      <!-- 中央核心：3D 三层立体地图 + 底部指令台 -->
+      <section class="game-center-stage">
+        <div id="hud-artifacts-bar" class="hud-artifacts-bar"></div>
+
+        <div id="map-viewport" class="map-viewport">
+          <div id="map-camera-controls" class="map-camera-controls">
+            <button id="btn-cam-default" class="cam-btn is-active" type="button" title="默认立体视角">立体</button>
+            <button id="btn-cam-top" class="cam-btn" type="button" title="高空俯视">俯视</button>
+            <button id="btn-cam-side" class="cam-btn" type="button" title="三层纵深侧视">纵深</button>
+            <button id="btn-cam-zoom-in" class="cam-btn" type="button" title="放大">+</button>
+            <button id="btn-cam-zoom-out" class="cam-btn" type="button" title="缩小">−</button>
+          </div>
+
+          <div class="map-drag-hint">拖拽旋转 · 滚轮缩放 · 点击节点互动</div>
+
+          <div id="map-scene-3d" class="map-scene-3d">
+            <div id="layer-sky" class="map-layer map-layer--sky" data-layer="sky">
+              <div class="layer-plate"><span class="layer-watermark">SKY // 03</span></div>
+              <div id="nodes-sky" class="layer-nodes"></div>
+            </div>
+
+            <div id="layer-land" class="map-layer map-layer--land" data-layer="land">
+              <div class="layer-plate"><span class="layer-watermark">LAND // 02</span></div>
+              <div id="nodes-land" class="layer-nodes"></div>
+            </div>
+
+            <div id="layer-ocean" class="map-layer map-layer--ocean" data-layer="ocean">
+              <div class="layer-plate"><span class="layer-watermark">OCEAN // 01</span></div>
+              <div id="nodes-ocean" class="layer-nodes"></div>
+            </div>
+          </div>
+
+          <div id="map-fx-overlay" class="map-fx-overlay" aria-hidden="true"></div>
+        </div>
+
+        <section id="panel-action-dock" class="pk-panel panel-action-dock">
+          <div id="self-status-strip" class="self-status-strip"></div>
+
+          <div id="action-stage" class="action-stage">
+            <div id="stage-rps" class="stage-box is-hidden"></div>
+            <div id="stage-initiative" class="stage-box is-hidden"></div>
+            <div id="stage-actions" class="stage-box is-hidden"></div>
+            <div id="stage-subpanel" class="stage-box stage-subpanel is-hidden"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 右栏：实时战报流 -->
+      <aside id="panel-log" class="pk-panel panel-log">
+        <div class="panel-deco-tag">LOG // CHRONICLE</div>
+        <div id="battle-log-list" class="battle-log-list"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ==================== 右下角悬浮战术通讯 ==================== -->
+  <button id="comms-fab" class="comms-fab is-hidden" type="button" aria-expanded="false" aria-controls="comms-drawer">
+    <span class="comms-fab-label">💬 战术通讯</span>
+    <span id="comms-unread-badge" class="comms-badge is-hidden">0</span>
+  </button>
+
+  <aside id="comms-drawer" class="comms-drawer is-hidden" aria-label="战术通讯面板">
+    <div class="comms-header">
+      <span class="comms-title">TACTICAL COMMS</span>
+      <div class="comms-header-right">
+        <select id="comms-channel-select" class="pk-select pk-select--xs" aria-label="通讯频道">
+          <option value="all">📢 全员公屏</option>
+        </select>
+        <button id="btn-close-comms" class="icon-close-btn" type="button" aria-label="关闭通讯">✕</button>
+      </div>
+    </div>
+
+    <div id="comms-messages" class="comms-messages"></div>
+
+    <div id="comms-emoji-bar" class="comms-emoji-bar" aria-label="快捷地图表情">
+      <button class="emoji-btn" data-emoji="❤️" type="button" title="头顶飘心">❤️</button>
+      <button class="emoji-btn" data-emoji="💩" type="button" title="头顶飘屎">💩</button>
+      <button class="emoji-btn" data-emoji="🤡" type="button" title="小丑嘲讽">🤡</button>
+      <button class="emoji-btn" data-emoji="🔪" type="button" title="亮刀威胁">🔪</button>
+      <button class="emoji-btn" data-emoji="🤝" type="button" title="请求结盟">🤝</button>
+      <button class="emoji-btn" data-emoji="🆘" type="button" title="紧急求救">🆘</button>
+    </div>
+
+    <div id="comms-quick-phrases" class="comms-quick-phrases">
+      <button class="phrase-chip" data-phrase="先集火通缉犯！" type="button">先集火通缉犯</button>
+      <button class="phrase-chip" data-phrase="别扒我裤，先联手！" type="button">别扒我裤</button>
+      <button class="phrase-chip" data-phrase="谁去杀典狱长劫狱？" type="button">联手劫狱</button>
+      <button class="phrase-chip" data-phrase="黑市休战一回合。" type="button">黑市休战</button>
+      <button class="phrase-chip" data-phrase="龙宫神器快出了！" type="button">龙宫抢神器</button>
+    </div>
+
+    <form id="comms-form" class="comms-input-row" onsubmit="return false;">
+      <input id="comms-input" class="pk-input pk-input--sm" type="text" maxlength="120" placeholder="输入战术密语..." autocomplete="off" />
+      <button id="comms-send-btn" class="pk-btn pk-btn--accent pk-btn--sm" type="submit">
+        <span class="btn-label">发送</span>
+      </button>
+    </form>
+  </aside>
+
+  <!-- ==================== 通用弹窗系统 ==================== -->
+  <div id="modal-backdrop" class="modal-backdrop is-hidden" role="dialog" aria-modal="true">
+    <!-- 弹窗 1：3步极简新手引导 -->
+    <div id="modal-guide" class="pk-modal is-hidden">
+      <div class="modal-header">
+        <span class="modal-kicker">BRIEFING // 03 STEPS</span>
+        <h3 class="modal-title">战术速成指南</h3>
+        <button id="guide-close" class="icon-close-btn" type="button" aria-label="关闭">✕</button>
+      </div>
+
+      <div id="guide-steps" class="guide-steps">
+        <div class="guide-step is-active" data-step="0">
+          <div class="guide-step-num">01</div>
+          <h4>猜拳抢步 · 解释权博弈</h4>
+          <p>每回合全员猜拳（平局重猜），胜者得 <strong>1 步</strong>（常规步数不跨回合攒）。多人同时赢拳时，胜者再猜一次抢「第一解释权」，第一名自由挑选第几个行动，决定先手压制还是后手收割。</p>
+          <div class="guide-tip">核心击杀链：同地点<strong>扒裤</strong>（无需刀，目标 -1 裤）→ 目标 0 裤时持刀执行<strong>「咔」</strong>造成致命伤！移动可免费强行带走同地点任意人。</div>
+        </div>
+
+        <div class="guide-step" data-step="1">
+          <div class="guide-step-num">02</div>
+          <h4>三层 3D 地图 · 呼吸与神器</h4>
+          <p>地图分为<strong>天空 / 陆地 / 海洋</strong>三层。海空共用 <strong>5 回合缺氧额度</strong>（第4、5回合攻击减半且禁主动技，第5回合末未呼吸/回陆/无氧气瓶即窒息）。</p>
+          <p><strong>陆地</strong>含警局（远程三局两胜逮捕）、监狱（杀典狱长全员越狱）、黑市（8抽3恶魔契约）、地府（阵亡后有1次复活猜拳机会）；<strong>海洋</strong>龙宫可全服合力锻造 4 件唯一神器；<strong>天空</strong>可许愿或改写下回合血月/迷雾/雷暴天象。</p>
+        </div>
+
+        <div class="guide-step" data-step="2">
+          <div class="guide-step-num">03</div>
+          <h4>17 角色联动 · 通缉与坍塌</h4>
+          <p>17 位角色分为<strong>刺客 / 控场 / 诡计 / 生存</strong>四系，从量子隐身预判、寄生爆体、提线强控到结界隔绝，每位角色都能改写战局规则。</p>
+          <p>持 ≥2 龙宫神器或击杀 ≥2 人将触发<strong>全服通缉</strong>（击杀通缉犯回 +1 命且下回合保底 1 步）；第 10 回合起地图每回合永久坍塌 1 个非出生点，逼入最终血战！</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div id="guide-step-dots" class="step-dots">
+          <span class="step-dot is-active" data-step="0"></span>
+          <span class="step-dot" data-step="1"></span>
+          <span class="step-dot" data-step="2"></span>
+        </div>
+        <div class="modal-footer-btns">
+          <button id="guide-prev" class="pk-btn pk-btn--ghost pk-btn--sm" type="button"><span class="btn-label">上一步</span></button>
+          <button id="guide-next" class="pk-btn pk-btn--primary pk-btn--sm" type="button"><span class="btn-label">下一步</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗 2：房主实时热更新参数配置 -->
+    <div id="modal-host-config" class="pk-modal is-hidden">
+      <div class="modal-header">
+        <span class="modal-kicker">HOST // HOT-RELOAD CONFIG</span>
+        <h3 class="modal-title">房主实时参数配置</h3>
+        <button id="btn-close-config" class="icon-close-btn" type="button" aria-label="关闭">✕</button>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-item">
+          <label for="cfg-collapse-turn">地图坍塌起始回合</label>
+          <input id="cfg-collapse-turn" class="pk-input pk-input--sm" type="number" min="3" max="30" value="10" />
+        </div>
+        <div class="config-item">
+          <label for="cfg-oxygen-max">海空最大缺氧回合</label>
+          <input id="cfg-oxygen-max" class="pk-input pk-input--sm" type="number" min="3" max="10" value="5" />
+        </div>
+        <div class="config-item">
+          <label for="cfg-bounty-artifacts">通缉龙宫神器阈值</label>
+          <input id="cfg-bounty-artifacts" class="pk-input pk-input--sm" type="number" min="1" max="4" value="2" />
+        </div>
+        <div class="config-item">
+          <label for="cfg-bounty-kills">通缉击杀人数阈值</label>
+          <input id="cfg-bounty-kills" class="pk-input pk-input--sm" type="number" min="1" max="6" value="2" />
+        </div>
+        <div class="config-item">
+          <label for="cfg-ai-delay">AI 决策延迟 (ms)</label>
+          <input id="cfg-ai-delay" class="pk-input pk-input--sm" type="number" min="250" max="2500" step="50" value="850" />
+        </div>
+
+        <div class="config-switches">
+          <label class="pk-check">
+            <input id="cfg-opt-collapse" type="checkbox" checked />
+            <span class="pk-check-box"></span>
+            <span class="pk-check-text">启用残局地图坍塌</span>
+          </label>
+          <label class="pk-check">
+            <input id="cfg-opt-bounty" type="checkbox" checked />
+            <span class="pk-check-box"></span>
+            <span class="pk-check-text">启用全服通缉悬赏</span>
+          </label>
+          <label class="pk-check">
+            <input id="cfg-opt-vfx" type="checkbox" checked />
+            <span class="pk-check-box"></span>
+            <span class="pk-check-text">本地全屏特效与合成音效</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="config-note">房主修改后将实时热广播至房间内所有玩家</span>
+        <button id="btn-apply-config" class="pk-btn pk-btn--crimson pk-btn--sm" type="button">
+          <span class="btn-label">应用并热同步</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 弹窗 3：终局结算面板 -->
+    <div id="modal-gameover" class="pk-modal pk-modal--wide is-hidden">
+      <div class="modal-header">
+        <span class="modal-kicker">FINALE // VERDICT</span>
+        <h3 class="modal-title">战局终结</h3>
+      </div>
+
+      <div id="gameover-winner" class="gameover-winner"></div>
+      <div id="gameover-stats" class="gameover-stats"></div>
+
+      <div class="modal-footer">
+        <button id="btn-back-lobby" class="pk-btn pk-btn--ghost" type="button">
+          <span class="btn-label">返回大厅</span>
+        </button>
+        <button id="btn-rematch" class="pk-btn pk-btn--crimson" type="button">
+          <span class="btn-label">原班人马再来一局</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
